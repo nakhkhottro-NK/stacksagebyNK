@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+
+<section class="hero">
+  <div class="hero-badge"><i class="fas fa-bolt"></i> <span data-i18n="hero_badge">AI-Powered Analysis</span></div>
+  <h1 class="hero-title">
+    <span data-i18n="hero_title1">Discover What</span><br>
+    <span class="gradient-text" data-i18n="hero_title2">Developers Build</span>
+  </h1>
+  <p class="hero-sub" data-i18n="hero_sub">
+    Search any technology domain. Get real GitHub data, AI-generated trend insights,
+    interactive charts, and a personalized learning roadmap — instantly.
+  </p>
+
+  <form action="/analyze" method="POST" class="search-form" id="searchForm">
+    <div class="search-wrapper">
+      <i class="fas fa-search search-icon"></i>
+      <input
+        type="text" name="query" id="queryInput"
+        data-i18n="search_placeholder"
+        placeholder="e.g. machine learning, web3, rust game engine…"
+        class="search-input" required autocomplete="off"
+      />
+      <input type="hidden" name="domain" id="domainInput"/>
+      <button type="submit" class="search-btn" id="searchBtn">
+        <span class="btn-text"><i class="fas fa-rocket"></i> <span data-i18n="search_btn">Analyze</span></span>
+        <span class="btn-loading hidden"><i class="fas fa-spinner fa-spin"></i></span>
+      </button>
+    </div>
+  </form>
+
+  <div class="quick-tags">
+    <span class="tag-label" data-i18n="try_label">Try:</span>
+    {% for tag in ['machine learning', 'rust', 'react', 'blockchain', 'game engine', 'llm', 'devops', 'flutter'] %}
+      <button class="tag" onclick="setQuery('{{ tag }}')">{{ tag }}</button>
+    {% endfor %}
+  </div>
+
+  <!-- Hero illustration: animated SVG -->
+  <div class="hero-visual">
+    <svg viewBox="0 0 880 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="line1" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#7c9eff" stop-opacity="0"/>
+          <stop offset="50%" stop-color="#7c9eff" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="#b794f4" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="line2" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#b794f4" stop-opacity="0"/>
+          <stop offset="50%" stop-color="#b794f4" stop-opacity="0.7"/>
+          <stop offset="100%" stop-color="#4fd1c5" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <!-- Wavy lines -->
+      <path d="M 0 100 Q 220 40, 440 100 T 880 100" stroke="url(#line1)" stroke-width="2" fill="none">
+        <animate attributeName="d" dur="6s" repeatCount="indefinite"
+          values="M 0 100 Q 220 40, 440 100 T 880 100;
+                  M 0 100 Q 220 160, 440 100 T 880 100;
+                  M 0 100 Q 220 40, 440 100 T 880 100"/>
+      </path>
+      <path d="M 0 120 Q 220 60, 440 120 T 880 120" stroke="url(#line2)" stroke-width="2" fill="none">
+        <animate attributeName="d" dur="8s" repeatCount="indefinite"
+          values="M 0 120 Q 220 180, 440 120 T 880 120;
+                  M 0 120 Q 220 60, 440 120 T 880 120;
+                  M 0 120 Q 220 180, 440 120 T 880 120"/>
+      </path>
+      <!-- Floating dots -->
+      <g>
+        <circle cx="150" cy="80" r="3" fill="#7c9eff">
+          <animate attributeName="cy" values="80;60;80" dur="3s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="3s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="350" cy="130" r="2.5" fill="#b794f4">
+          <animate attributeName="cy" values="130;110;130" dur="4s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.4;1;0.4" dur="4s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="560" cy="90" r="3" fill="#4fd1c5">
+          <animate attributeName="cy" values="90;70;90" dur="3.5s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.3;1;0.3" dur="3.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="730" cy="140" r="2.5" fill="#7c9eff">
+          <animate attributeName="cy" values="140;120;140" dur="4.5s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.4;1;0.4" dur="4.5s" repeatCount="indefinite"/>
+        </circle>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<section class="features">
+  <div class="feat-card">
+    <i class="fas fa-code-branch feat-icon"></i>
+    <h3 data-i18n="feat1_title">Live GitHub Data</h3>
+    <p data-i18n="feat1_desc">Pulls real-time repository data — stars, forks, languages, topics, and commit activity.</p>
+  </div>
+  <div class="feat-card">
+    <i class="fas fa-brain feat-icon"></i>
+    <h3 data-i18n="feat2_title">AI Insights</h3>
+    <p data-i18n="feat2_desc">Advanced prompt engineering extracts trends, rising stars, gaps, and future predictions.</p>
+  </div>
+  <div class="feat-card">
+    <i class="fas fa-chart-bar feat-icon"></i>
+    <h3 data-i18n="feat3_title">5 Visual Charts</h3>
+    <p data-i18n="feat3_desc">Stars ranking, language distribution, activity scatter, topic word cloud, and timeline.</p>
+  </div>
+  <div class="feat-card">
+    <i class="fas fa-road feat-icon"></i>
+    <h3 data-i18n="feat4_title">Learning Roadmap</h3>
+    <p data-i18n="feat4_desc">AI generates a custom 3-phase learning path based on the actual tools used by top projects.</p>
+  </div>
+  <div class="feat-card">
+    <i class="fas fa-comments feat-icon"></i>
+    <h3 data-i18n="feat5_title">AI Chat</h3>
+    <p data-i18n="feat5_desc">Ask follow-up questions about your results and get instant, contextual answers.</p>
+  </div>
+  <div class="feat-card">
+    <i class="fas fa-share-alt feat-icon"></i>
+    <h3 data-i18n="feat6_title">PDF + Share</h3>
+    <p data-i18n="feat6_desc">Export analysis as a clean PDF report or share a public link with your team.</p>
+  </div>
+</section>
+
+{% if recent_searches %}
+<section class="recent-section">
+  <h2 class="section-title"><i class="fas fa-history"></i> <span data-i18n="recent_title">Recent Searches</span></h2>
+  <div class="recent-grid">
+    {% for s in recent_searches %}
+    <a href="#" class="recent-card" onclick="event.preventDefault(); setQuery('{{ s.query }}'); document.getElementById('searchForm').submit();">
+      <div class="recent-query">{{ s.query }}</div>
+      <div class="recent-meta">{{ s.timestamp }}</div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

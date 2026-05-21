@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}{{ query }}{% endblock %}
+
+{% block content %}
+
+<!-- ── HEADER ── -->
+<div class="results-header">
+  <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+    <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i> <span data-i18n="new_search">New Search</span></a>
+    <div>
+      <h1 class="results-title">Analysis: <span class="gradient-text">{{ query }}</span></h1>
+      <p class="results-sub">{{ stats.total_found | int | default(0) }} repositories found · {{ stats.analyzed }} analyzed</p>
+    </div>
+  </div>
+
+  <div class="results-actions">
+    <a href="/export/pdf/{{ search_id }}" class="action-btn">
+      <i class="fas fa-file-pdf"></i> <span data-i18n="export_pdf">Export PDF</span>
+    </a>
+    <button class="action-btn" onclick="generateShareLink({{ search_id }})">
+      <i class="fas fa-share-alt"></i> <span data-i18n="share_link">Share</span>
+    </button>
+  </div>
+</div>
+
+<!-- ── STAT CARDS ── -->
+<div class="stat-row">
+  <div class="stat-card">
+    <div class="stat-icon"><i class="fas fa-star"></i></div>
+    <div class="stat-val">{{ "{:,}".format(stats.total_stars) }}</div>
+    <div class="stat-label">Total Stars</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon"><i class="fas fa-code-branch"></i></div>
+    <div class="stat-val">{{ "{:,}".format(stats.total_forks) }}</div>
+    <div class="stat-label">Total Forks</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+    <div class="stat-val">{{ "{:,}".format(stats.avg_stars) }}</div>
+    <div class="stat-label">Avg Stars/Repo</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+    <div class="stat-val">{{ stats.languages | length }}</div>
+    <div class="stat-label">Languages</div>
+  </div>
+</div>
+
+<!-- ── TWO COLUMN LAYOUT ── -->
+<div class="two-col">
+
+  <!-- LEFT: AI Insights -->
+  <div class="left-col">
+
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-brain"></i> AI Trend Analysis
+        <span class="powered-badge">Gemini AI</span>
+      </div>
+      <div class="card-body markdown-content">
+        {{ ai_insights | replace('\n', '<br>') | safe }}
+      </div>
+    </div>
+
+    {% if ai_recommendations %}
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-trophy"></i> AI Recommendations
+        <span class="powered-badge">Gemini AI</span>
+      </div>
+      <div class="card-body markdown-content">
+        {{ ai_recommendations | replace('\n', '<br>') | safe }}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-road"></i> Learning Roadmap
+        <span class="powered-badge">Gemini AI</span>
+      </div>
+      <div class="card-body markdown-content">
+        {{ learning_path | replace('\n', '<br>') | safe }}
+      </div>
+    </div>
+
+    {% if tech_comparison %}
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-balance-scale"></i> Technology Comparison
+        <span class="powered-badge">Gemini AI</span>
+      </div>
+      <div class="card-body markdown-content">
+        {{ tech_comparison | replace('\n', '<br>') | safe }}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- RIGHT: Charts -->
+  <div class="right-col">
+    {% if charts.stars %}
+    <div class="card">
+      <div class="card-header"><i class="fas fa-bar-chart"></i> Stars Ranking</div>
+      <div class="card-body chart-body">
+        <img src="data:image/png;base64,{{ charts.stars }}" alt="Stars" class="chart-img"/>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if charts.languages %}
+    <div class="card">
+      <div class="card-header"><i class="fas fa-code"></i> Language Distribution</div>
+      <div class="card-body chart-body">
+        <img src="data:image/png;base64,{{ charts.languages }}" alt="Languages" class="chart-img"/>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if charts.wordcloud %}
+    <div class="card">
+      <div class="card-header"><i class="fas fa-cloud"></i> Topic Word Cloud</div>
+      <div class="card-body chart-body">
+        <img src="data:image/png;base64,{{ charts.wordcloud }}" alt="Word cloud" class="chart-img"/>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if charts.activity %}
+    <div class="card">
+      <div class="card-header"><i class="fas fa-braille"></i> Activity Map</div>
+      <div class="card-body chart-body">
+        <img src="data:image/png;base64,{{ charts.activity }}" alt="Activity" class="chart-img"/>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if charts.timeline %}
+    <div class="card">
+      <div class="card-header"><i class="fas fa-stream"></i> Activity Timeline</div>
+      <div class="card-body chart-body">
+        <img src="data:image/png;base64,{{ charts.timeline }}" alt="Timeline" class="chart-img"/>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ── REPOSITORY LIST ── -->
+<div class="card repos-card">
+  <div class="card-header"><i class="fas fa-list"></i> Top Repositories ({{ repos | length }})</div>
+  <div class="card-body">
+    <div class="repos-grid">
+      {% for repo in repos %}
+      <div class="repo-card">
+        <div class="repo-top">
+          <img src="{{ repo.avatar }}" alt="avatar" class="repo-avatar"/>
+          <div class="repo-info">
+            <a href="{{ repo.url }}" target="_blank" rel="noopener" class="repo-name">{{ repo.short_name }}</a>
+            <div class="repo-owner">{{ repo.owner }}</div>
+          </div>
+          <button class="bookmark-btn" title="Bookmark"
+            onclick="bookmarkRepo('{{ repo.name }}', '{{ repo.url }}', {{ repo.stars }}, '{{ repo.language }}', '{{ repo.description | replace("'", "") | truncate(80, true) }}')">
+            <i class="fas fa-bookmark"></i>
+          </button>
+        </div>
+        <p class="repo-desc">{{ repo.description | truncate(90) }}</p>
+        <div class="repo-meta">
+          <span><i class="fas fa-star"></i> {{ "{:,}".format(repo.stars) }}</span>
+          <span><i class="fas fa-code-branch"></i> {{ "{:,}".format(repo.forks) }}</span>
+          {% if repo.language != 'Unknown' %}<span class="lang-badge">{{ repo.language }}</span>{% endif %}
+          <span class="updated-badge">{{ repo.updated_at }}</span>
+        </div>
+        {% if repo.topics %}
+        <div class="topic-tags">
+          {% for t in repo.topics[:4] %}
+          <span class="topic-tag">{{ t }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── AI CHAT WIDGET ── -->
+<div class="chat-widget">
+  <div id="chatPanel" class="chat-panel hidden">
+    <div class="chat-header">
+      <h3><i class="fas fa-comments"></i> <span data-i18n="chat_open">Chat with AI</span></h3>
+      <button class="chat-close" onclick="toggleChat()" aria-label="Close">×</button>
+    </div>
+    <div id="chatMessages" class="chat-messages"></div>
+    <div class="chat-input-row">
+      <input id="chatInput" class="chat-input" type="text" data-i18n="chat_placeholder" placeholder="Ask anything about these results…"/>
+      <button class="chat-send" onclick="sendChatMessage()" aria-label="Send"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+  <button class="chat-fab" onclick="toggleChat()" aria-label="Open AI chat">
+    <i class="fas fa-robot"></i>
+  </button>
+</div>
+
+<script>
+  // pass search_id to chat
+  document.body.dataset.searchId = "{{ search_id }}";
+</script>
+{% endblock %}

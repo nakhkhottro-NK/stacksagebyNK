@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}{{ domain_a }} vs {{ domain_b }}{% endblock %}
+{% block content %}
+
+<div class="results-header">
+  <a href="/compare" class="back-btn"><i class="fas fa-arrow-left"></i> New Comparison</a>
+  <div>
+    <h1 class="results-title">
+      <span class="gradient-text">{{ domain_a }}</span>
+      <span style="color:var(--text-muted)">vs</span>
+      <span class="gradient-text">{{ domain_b }}</span>
+    </h1>
+  </div>
+</div>
+
+<div class="compare-results-grid">
+
+  <!-- SIDE A -->
+  <div class="compare-side">
+    <h2>{{ domain_a }}</h2>
+    <div class="compare-stats">
+      <div class="compare-mini-stat">
+        <div class="compare-mini-val">{{ "{:,}".format(side_a.total_found) }}</div>
+        <div class="compare-mini-label">Repos found</div>
+      </div>
+      <div class="compare-mini-stat">
+        <div class="compare-mini-val">{{ "{:,}".format(side_a.total_stars) }}</div>
+        <div class="compare-mini-label">Total stars</div>
+      </div>
+      <div class="compare-mini-stat">
+        <div class="compare-mini-val">{{ "{:,}".format(side_a.avg_stars) }}</div>
+        <div class="compare-mini-label">Avg stars</div>
+      </div>
+      <div class="compare-mini-stat">
+        <div class="compare-mini-val">{{ side_a.languages | length }}</div>
+        <div class="compare-mini-label">Languages</div>
+      </div>
+    </div>
+
+    <h4 style="margin:1rem 0 0.5rem; font-size:0.9rem; color:var(--text-muted);">TOP LANGUAGES</h4>
+    <div class="topic-tags">
+      {% for lang, cnt in side_a.languages.items() %}
+        <span class="topic-tag">{{ lang }} ({{ cnt }})</span>
+      {% endfor %}
+    </div>
+
+    <h4 style="margin:1.5rem 0 0.5rem; font-size:0.9rem; color:var(--text-muted);">TOP REPOS</h4>
+    {% for r in side_a.top_repos %}
+    <div style="padding:0.5rem 0; border-bottom: 1px solid var(--border); font-size:0.85rem;">
+      <a href="{{ r.url }}" target="_blank" style="color:var(--accent); text-decoration:none; font-weight:600;">{{ r.short_name }}</a>
+      <span style="float:right; color:var(--text-muted);"><i class="fas fa-star"></i> {{ "{:,}".format(r.stars) }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- SIDE B -->
+  <div class="compare-side">
+    <h2>{{ domain_b }}</h2>
+    <div class="compare-stats">
+      <div class="compare-mini-stat">
+        <div class="compare-mini-val">{{ "{:,}".format(side_b.total_found) }}</div>
+        <div class="compare-mini-label">Repos found</div>
+      </div>
+      <div class="compare-mini-stat">
+        <div class="compare-mini-val">{{ "{:,}".format(side_b.total_stars) }}</div>
+        <div class="compare-mini-label">Total stars</div>
+      </div>
+      <div class="compare-mini-stat">
+        <div class="compare-mini-val">{{ "{:,}".format(side_b.avg_stars) }}</div>
+        <div class="compare-mini-label">Avg stars</div>
+      </div>
+      <div class="compare-mini-stat">
+        <div class="compare-mini-val">{{ side_b.languages | length }}</div>
+        <div class="compare-mini-label">Languages</div>
+      </div>
+    </div>
+
+    <h4 style="margin:1rem 0 0.5rem; font-size:0.9rem; color:var(--text-muted);">TOP LANGUAGES</h4>
+    <div class="topic-tags">
+      {% for lang, cnt in side_b.languages.items() %}
+        <span class="topic-tag">{{ lang }} ({{ cnt }})</span>
+      {% endfor %}
+    </div>
+
+    <h4 style="margin:1.5rem 0 0.5rem; font-size:0.9rem; color:var(--text-muted);">TOP REPOS</h4>
+    {% for r in side_b.top_repos %}
+    <div style="padding:0.5rem 0; border-bottom: 1px solid var(--border); font-size:0.85rem;">
+      <a href="{{ r.url }}" target="_blank" style="color:var(--accent); text-decoration:none; font-weight:600;">{{ r.short_name }}</a>
+      <span style="float:right; color:var(--text-muted);"><i class="fas fa-star"></i> {{ "{:,}".format(r.stars) }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- AI Verdict -->
+<div class="card" style="margin-top:2rem;">
+  <div class="card-header">
+    <i class="fas fa-gavel"></i> AI Verdict
+    <span class="powered-badge">Gemini AI</span>
+  </div>
+  <div class="card-body markdown-content">
+    {{ ai_verdict | replace('\n', '<br>') | safe }}
+  </div>
+</div>
+
+{% endblock %}

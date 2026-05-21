@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Search History{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1><i class="fas fa-history"></i> Search <span class="gradient-text">History</span></h1>
+  <p>Your previous GitHub domain analyses</p>
+</div>
+
+{% if searches %}
+<div class="history-list">
+  {% for s in searches %}
+  <div class="history-item">
+    <div class="hi-left">
+      <div class="hi-icon"><i class="fas fa-search"></i></div>
+      <div>
+        <div class="hi-query">{{ s.query }}</div>
+        <div class="hi-time"><i class="far fa-clock"></i> {{ s.timestamp }}</div>
+      </div>
+    </div>
+    <form action="/analyze" method="POST" style="margin:0;">
+      <input type="hidden" name="query" value="{{ s.query }}"/>
+      <input type="hidden" name="domain" value="{{ s.domain }}"/>
+      <button type="submit" class="re-run-btn"><i class="fas fa-redo"></i> Re-run</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <i class="fas fa-history fa-3x"></i>
+  <p>No search history yet. Go explore some technologies!</p>
+  <a href="/" class="cta-btn">Start Exploring</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Shared: {{ query }}{% endblock %}
+{% block content %}
+
+<div class="results-header">
+  <div>
+    <span class="hero-badge"><i class="fas fa-share-alt"></i> Shared Analysis</span>
+    <h1 class="results-title">Analysis: <span class="gradient-text">{{ query }}</span></h1>
+    <p class="results-sub">{{ repos | length }} repositories · view-only mode</p>
+  </div>
+  <a href="/" class="action-btn primary"><i class="fas fa-search"></i> Try Your Own Search</a>
+</div>
+
+<div class="stat-row">
+  <div class="stat-card">
+    <div class="stat-icon"><i class="fas fa-star"></i></div>
+    <div class="stat-val">{{ "{:,}".format(stats.total_stars) }}</div>
+    <div class="stat-label">Total Stars</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon"><i class="fas fa-code-branch"></i></div>
+    <div class="stat-val">{{ "{:,}".format(stats.total_forks) }}</div>
+    <div class="stat-label">Total Forks</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+    <div class="stat-val">{{ stats.languages | length }}</div>
+    <div class="stat-label">Languages</div>
+  </div>
+</div>
+
+<div class="two-col">
+  <div>
+    <div class="card">
+      <div class="card-header"><i class="fas fa-brain"></i> AI Analysis</div>
+      <div class="card-body markdown-content">{{ ai_insights | replace('\n', '<br>') | safe }}</div>
+    </div>
+  </div>
+  <div>
+    {% if charts.stars %}
+    <div class="card">
+      <div class="card-header"><i class="fas fa-bar-chart"></i> Stars Ranking</div>
+      <div class="card-body chart-body">
+        <img src="data:image/png;base64,{{ charts.stars }}" class="chart-img"/>
+      </div>
+    </div>
+    {% endif %}
+    {% if charts.languages %}
+    <div class="card">
+      <div class="card-header"><i class="fas fa-code"></i> Languages</div>
+      <div class="card-body chart-body">
+        <img src="data:image/png;base64,{{ charts.languages }}" class="chart-img"/>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card repos-card">
+  <div class="card-header"><i class="fas fa-list"></i> Repositories</div>
+  <div class="card-body">
+    <div class="repos-grid">
+      {% for r in repos %}
+      <div class="repo-card">
+        <div class="repo-top">
+          <img src="{{ r.avatar }}" class="repo-avatar"/>
+          <div class="repo-info">
+            <a href="{{ r.url }}" target="_blank" class="repo-name">{{ r.short_name }}</a>
+            <div class="repo-owner">{{ r.owner }}</div>
+          </div>
+        </div>
+        <p class="repo-desc">{{ r.description | truncate(90) }}</p>
+        <div class="repo-meta">
+          <span><i class="fas fa-star"></i> {{ "{:,}".format(r.stars) }}</span>
+          {% if r.language != 'Unknown' %}<span class="lang-badge">{{ r.language }}</span>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="StackSage — AI-powered GitHub trend intelligence. Analyze any tech domain instantly."/>
+  <meta name="theme-color" content="#0a0e17"/>
+  <title>{% block title %}StackSage{% endblock %} — GitHub Trend Intelligence</title>
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="StackSage — AI-Powered GitHub Intelligence"/>
+  <meta property="og:description" content="Discover what developers build. Real GitHub data + AI trend insights."/>
+  <meta property="og:type" content="website"/>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Bengali:wght@400;600&family=Noto+Sans+SC:wght@400;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%237c9eff'/%3E%3Cstop offset='100%25' stop-color='%23b794f4'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23g)' d='M32 4 L58 18 L58 46 L32 60 L6 46 L6 18 Z M32 16 L20 24 L20 40 L32 48 L44 40 L44 24 Z'/%3E%3C/svg%3E"/>
+</head>
+<body data-search-id="{{ search_id if search_id else '' }}">
+
+<!-- ── NAVBAR ── -->
+<nav class="navbar">
+  <a href="/" class="nav-brand">
+    <i class="fas fa-satellite-dish"></i>
+    <span>Stack<span class="accent">Sage</span></span>
+  </a>
+
+  <div class="nav-links">
+    <a href="/" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+      <i class="fas fa-search"></i> <span data-i18n="nav_explore">Explore</span>
+    </a>
+    <a href="/compare" class="nav-link {% if request.endpoint == 'compare_page' %}active{% endif %}">
+      <i class="fas fa-balance-scale"></i> <span data-i18n="nav_compare">Compare</span>
+    </a>
+    <a href="/history" class="nav-link {% if request.endpoint == 'history' %}active{% endif %}">
+      <i class="fas fa-history"></i> <span data-i18n="nav_history">History</span>
+    </a>
+    <a href="/bookmarks" class="nav-link {% if request.endpoint == 'bookmarks' %}active{% endif %}">
+      <i class="fas fa-bookmark"></i> <span data-i18n="nav_bookmarks">Bookmarks</span>
+    </a>
+
+    <div class="lang-switcher">
+      <button class="lang-btn lang-active" data-lang="en" onclick="applyLanguage('en')">EN</button>
+      <button class="lang-btn" data-lang="zh" onclick="applyLanguage('zh')">中文</button>
+      <button class="lang-btn" data-lang="bn" onclick="applyLanguage('bn')">বাংলা</button>
+    </div>
+
+    <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+      <i class="fas fa-sun"></i>
+    </button>
+  </div>
+
+  <button class="mobile-toggle" onclick="toggleDrawer()" aria-label="Menu">
+    <i class="fas fa-bars"></i>
+  </button>
+</nav>
+
+<!-- Mobile Drawer -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
+<aside class="mobile-drawer" id="mobileDrawer">
+  <a href="/" class="nav-link"><i class="fas fa-search"></i> <span data-i18n="nav_explore">Explore</span></a>
+  <a href="/compare" class="nav-link"><i class="fas fa-balance-scale"></i> <span data-i18n="nav_compare">Compare</span></a>
+  <a href="/history" class="nav-link"><i class="fas fa-history"></i> <span data-i18n="nav_history">History</span></a>
+  <a href="/bookmarks" class="nav-link"><i class="fas fa-bookmark"></i> <span data-i18n="nav_bookmarks">Bookmarks</span></a>
+  <div class="lang-switcher">
+    <button class="lang-btn lang-active" data-lang="en" onclick="applyLanguage('en')">EN</button>
+    <button class="lang-btn" data-lang="zh" onclick="applyLanguage('zh')">中文</button>
+    <button class="lang-btn" data-lang="bn" onclick="applyLanguage('bn')">বাংলা</button>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" style="margin-top: 1rem; align-self: flex-start;">
+    <i class="fas fa-sun"></i>
+  </button>
+</aside>
+
+<!-- ── FLASH ── -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-container">
+      {% for cat, msg in messages %}
+        <div class="flash flash-{{ cat }}">
+          <i class="fas fa-{% if cat == 'error' %}exclamation-circle{% else %}check-circle{% endif %}"></i>
+          <span>{{ msg }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<main class="container">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <span><i class="fas fa-satellite-dish"></i> <strong>StackSage</strong> v2.0</span>
+    <span>GitHub API • Gemini AI • Flask • Python</span>
+    <span data-i18n="footer_dev">Built with ❤️</span>
+  </div>
+</footer>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/lang.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Compare Domains{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fas fa-balance-scale"></i> <span class="gradient-text" data-i18n="compare_title">Compare Two Domains</span></h1>
+  <p data-i18n="compare_sub">Side-by-side data + AI verdict on which is better for what.</p>
+</div>
+
+<form action="/compare/run" method="POST">
+  <div class="compare-grid">
+    <div class="compare-input-wrap">
+      <div class="compare-label" data-i18n="compare_a">Domain A</div>
+      <input class="compare-input" type="text" name="domain_a" placeholder="e.g. react" required autocomplete="off"/>
+    </div>
+    <div class="vs-badge">VS</div>
+    <div class="compare-input-wrap">
+      <div class="compare-label" data-i18n="compare_b">Domain B</div>
+      <input class="compare-input" type="text" name="domain_b" placeholder="e.g. vue" required autocomplete="off"/>
+    </div>
+  </div>
+  <div style="text-align:center; margin-top:1.5rem;">
+    <button type="submit" class="search-btn">
+      <i class="fas fa-rocket"></i> <span data-i18n="compare_btn">Compare Now</span>
+    </button>
+  </div>
+</form>
+
+<div style="max-width:680px; margin:3rem auto 0; text-align:center; color:var(--text-muted);">
+  <p style="font-size:0.9rem;">💡 Try comparing: <strong>react vs vue</strong>, <strong>rust vs go</strong>, <strong>pytorch vs tensorflow</strong>, <strong>nextjs vs nuxtjs</strong></p>
+</div>
+
+{% endblock %}
