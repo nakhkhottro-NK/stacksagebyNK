@@ -617,3 +617,4 @@ footer { margin-top:auto; padding:1.4rem 2rem; background:rgba(6,6,15,0.85); bor
 .btn-outline { background:none; border:1px solid rgba(255,255,255,.18); color:inherit; padding:.4rem .9rem; border-radius:.5rem; cursor:pointer; font-size:.82rem; transition:.15s; text-decoration:none; display:inline-flex; align-items:center; gap:.4rem; }
 .btn-outline:hover { border-color:#7c5cfc; color:#7c5cfc; }
 .footer-right { font-size:.8rem; color:var(--text-faint); display:flex; align-items:center; gap:.4rem; }
+/* cache bust */
