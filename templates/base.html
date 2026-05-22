@@ -3,23 +3,30 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="description" content="StackSage — AI-powered GitHub trend intelligence. Analyze any tech domain instantly."/>
-  <meta name="theme-color" content="#0a0e17"/>
+  <meta name="description" content="StackSage — AI-powered GitHub trend intelligence."/>
+  <meta name="theme-color" content="#06060f"/>
   <title>{% block title %}StackSage{% endblock %} — GitHub Trend Intelligence</title>
-
-  <!-- Open Graph -->
   <meta property="og:title" content="StackSage — AI-Powered GitHub Intelligence"/>
   <meta property="og:description" content="Discover what developers build. Real GitHub data + AI trend insights."/>
   <meta property="og:type" content="website"/>
-
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Bengali:wght@400;600&family=Noto+Sans+SC:wght@400;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%237c9eff'/%3E%3Cstop offset='100%25' stop-color='%23b794f4'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23g)' d='M32 4 L58 18 L58 46 L32 60 L6 46 L6 18 Z M32 16 L20 24 L20 40 L32 48 L44 40 L44 24 Z'/%3E%3C/svg%3E"/>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%237c5cfc'/%3E%3Cstop offset='100%25' stop-color='%23c026d3'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23g)' d='M32 4 L58 18 L58 46 L32 60 L6 46 L6 18 Z M32 16 L20 24 L20 40 L32 48 L44 40 L44 24 Z'/%3E%3C/svg%3E"/>
 </head>
 <body data-search-id="{{ search_id if search_id else '' }}">
 
-<!-- ── NAVBAR ── -->
+<!-- Aurora blobs background -->
+<div class="aurora-bg-global">
+  <div class="aurora-blob" style="width:500px;height:500px;top:-150px;left:-100px;background:rgba(124,92,252,0.07);--d:10s;--tx:40px;--ty:30px"></div>
+  <div class="aurora-blob" style="width:400px;height:400px;bottom:-100px;right:-80px;background:rgba(192,38,211,0.06);--d:13s;--tx:-30px;--ty:-40px"></div>
+  <div class="aurora-blob" style="width:300px;height:300px;top:40%;left:50%;background:rgba(244,114,182,0.05);--d:15s;--tx:50px;--ty:-20px"></div>
+</div>
+
+<!-- Floating particles -->
+<canvas id="particleCanvas" style="position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.4"></canvas>
+
+<!-- NAVBAR -->
 <nav class="navbar">
   <a href="/" class="nav-brand">
     <i class="fas fa-satellite-dish"></i>
@@ -40,27 +47,21 @@
       <i class="fas fa-bookmark"></i> <span data-i18n="nav_bookmarks">Bookmarks</span>
     </a>
 
-    <!-- ── STUDENT ZONE NAV (NEW) ── -->
     {% if current_user %}
       <a href="{{ url_for('student_zone') }}"
          class="nav-link {% if request.endpoint == 'student_zone' %}active{% endif %}"
          style="display:flex;align-items:center;gap:.4rem">
-        <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#7c9eff,#b794f4);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#fff;flex-shrink:0">
+        <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#7c5cfc,#c026d3);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;flex-shrink:0;box-shadow:0 0 10px rgba(124,92,252,0.5)">
           {{ current_user.email[0].upper() }}
         </div>
         <span>Student Zone</span>
       </a>
     {% else %}
-      <a href="{{ url_for('login') }}"
-         class="nav-link {% if request.endpoint == 'login' %}active{% endif %}">
+      <a href="{{ url_for('login') }}" class="nav-link {% if request.endpoint == 'login' %}active{% endif %}">
         <i class="fas fa-sign-in-alt"></i> <span>Log in</span>
       </a>
-      <a href="{{ url_for('signup') }}"
-         style="padding:.35rem .9rem;border-radius:.5rem;font-size:.85rem;text-decoration:none;background:linear-gradient(135deg,#7c9eff,#b794f4);color:#fff;font-weight:600;">
-        Sign up
-      </a>
+      <a href="{{ url_for('signup') }}" class="nav-btn-signup">Sign up</a>
     {% endif %}
-    <!-- ── END STUDENT ZONE NAV ── -->
 
     <div class="lang-switcher">
       <button class="lang-btn lang-active" data-lang="en" onclick="applyLanguage('en')">EN</button>
@@ -81,40 +82,26 @@
 <!-- Mobile Drawer -->
 <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
 <aside class="mobile-drawer" id="mobileDrawer">
-  <a href="/" class="nav-link"><i class="fas fa-search"></i> <span data-i18n="nav_explore">Explore</span></a>
-  <a href="/compare" class="nav-link"><i class="fas fa-balance-scale"></i> <span data-i18n="nav_compare">Compare</span></a>
-  <a href="/history" class="nav-link"><i class="fas fa-history"></i> <span data-i18n="nav_history">History</span></a>
-  <a href="/bookmarks" class="nav-link"><i class="fas fa-bookmark"></i> <span data-i18n="nav_bookmarks">Bookmarks</span></a>
-
-  <!-- ── STUDENT ZONE MOBILE NAV (NEW) ── -->
+  <a href="/" class="nav-link"><i class="fas fa-search"></i> Explore</a>
+  <a href="/compare" class="nav-link"><i class="fas fa-balance-scale"></i> Compare</a>
+  <a href="/history" class="nav-link"><i class="fas fa-history"></i> History</a>
+  <a href="/bookmarks" class="nav-link"><i class="fas fa-bookmark"></i> Bookmarks</a>
   {% if current_user %}
-    <a href="{{ url_for('student_zone') }}" class="nav-link {% if request.endpoint == 'student_zone' %}active{% endif %}">
-      <i class="fas fa-graduation-cap"></i> Student Zone
-    </a>
-    <a href="{{ url_for('logout') }}" class="nav-link">
-      <i class="fas fa-sign-out-alt"></i> Log out
-    </a>
+    <a href="{{ url_for('student_zone') }}" class="nav-link"><i class="fas fa-graduation-cap"></i> Student Zone</a>
+    <a href="{{ url_for('logout') }}" class="nav-link"><i class="fas fa-sign-out-alt"></i> Log out</a>
   {% else %}
-    <a href="{{ url_for('login') }}" class="nav-link">
-      <i class="fas fa-sign-in-alt"></i> Log in
-    </a>
-    <a href="{{ url_for('signup') }}" class="nav-link">
-      <i class="fas fa-user-plus"></i> Sign up
-    </a>
+    <a href="{{ url_for('login') }}" class="nav-link"><i class="fas fa-sign-in-alt"></i> Log in</a>
+    <a href="{{ url_for('signup') }}" class="nav-link"><i class="fas fa-user-plus"></i> Sign up</a>
   {% endif %}
-  <!-- ── END STUDENT ZONE MOBILE NAV ── -->
-
-  <div class="lang-switcher">
+  <div class="lang-switcher" style="margin-top:1rem">
     <button class="lang-btn lang-active" data-lang="en" onclick="applyLanguage('en')">EN</button>
     <button class="lang-btn" data-lang="zh" onclick="applyLanguage('zh')">中文</button>
     <button class="lang-btn" data-lang="bn" onclick="applyLanguage('bn')">বাংলা</button>
   </div>
-  <button class="theme-toggle" onclick="toggleTheme()" style="margin-top: 1rem; align-self: flex-start;">
-    <i class="fas fa-sun"></i>
-  </button>
+  <button class="theme-toggle" onclick="toggleTheme()" style="margin-top:1rem;align-self:flex-start"><i class="fas fa-sun"></i></button>
 </aside>
 
-<!-- ── FLASH ── -->
+<!-- Flash -->
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     <div class="flash-container">
@@ -132,18 +119,59 @@
   {% block content %}{% endblock %}
 </main>
 
-<!-- ── FOOTER ── -->
+<!-- FOOTER -->
 <footer>
   <div class="footer-inner">
-    <span>© 2026 Developed by <strong style="background:linear-gradient(90deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;font-size:1.1em;letter-spacing:2px;">NK</strong></span>
+    <span>© 2026 Developed by
+      <strong class="nk-highlight">NK</strong>
+    </span>
+    <span class="footer-right">
+      <i class="fas fa-satellite-dish" style="color:#7c5cfc"></i>
+      Stack<span style="background:linear-gradient(135deg,#7c5cfc,#c026d3);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700">Sage</span>
+      — GitHub Trend Intelligence
+    </span>
   </div>
 </footer>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 <script src="{{ url_for('static', filename='js/lang.js') }}"></script>
+
+<!-- Particle canvas -->
+<script>
+(function(){
+  const canvas=document.getElementById('particleCanvas');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+  window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+  const colors=['rgba(124,92,252,','rgba(192,38,211,','rgba(244,114,182,','rgba(251,146,60,'];
+  const pts=Array.from({length:40},()=>({
+    x:Math.random()*canvas.width,y:Math.random()*canvas.height,
+    r:Math.random()*1.5+0.5,
+    vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,
+    a:Math.random()*.6+.1,
+    c:colors[Math.floor(Math.random()*colors.length)]
+  }));
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pts.forEach(p=>{
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=p.c+p.a+')';
+      ctx.fill();
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>canvas.width) p.vx*=-1;
+      if(p.y<0||p.y>canvas.height) p.vy*=-1;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+
 {% block scripts %}{% endblock %}
 </body>
 </html>
