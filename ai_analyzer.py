@@ -1,19 +1,9 @@
 """
-ai_analyzer.py — AI Analysis using Google Gemini (FREE)
+ai_analyzer.py — AI Analysis
+Auto-uses DeepSeek (paid) if available, else falls back to Gemini (free)
 """
 import json
-import os
-
-def _call_gemini(prompt: str) -> str:
-    try:
-        import google.generativeai as genai
-        from config import GEMINI_API_KEY
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
-        return response.text.strip()
-    except Exception as e:
-        return f"AI analysis unavailable: {str(e)}"
+from config import get_ai_response
 
 
 def analyze_repos(query: str, repos_data: dict) -> str:
@@ -53,7 +43,7 @@ Where is this domain headed in 2 years?
 One powerful sentence summarizing this ecosystem.
 
 Reference actual repo names and numbers. Max 500 words."""
-    return _call_gemini(prompt)
+    return get_ai_response(prompt)
 
 
 def generate_learning_path(domain: str, languages: dict = None, topics: dict = None) -> str:
@@ -79,7 +69,7 @@ Best 3 types of resources for this domain.
 Honest estimate for beginners vs experienced devs.
 
 Keep it practical and encouraging. Max 350 words."""
-    return _call_gemini(prompt)
+    return get_ai_response(prompt)
 
 
 def compare_technologies(tech_list: list, domain: str) -> str:
@@ -93,7 +83,7 @@ Create a markdown comparison table:
 
 Then write a 3-sentence recommendation on which to learn first and why.
 Max 200 words."""
-    return _call_gemini(prompt)
+    return get_ai_response(prompt)
 
 
 def chat_about_results(user_message: str, context: str, history: list) -> str:
@@ -115,7 +105,7 @@ User: {user_message}
 
 Reply in a concise, friendly, practical tone (2-4 short paragraphs max).
 Use markdown for lists or code."""
-    return _call_gemini(prompt)
+    return get_ai_response(prompt)
 
 
 def recommend_repos(query: str, repos: list) -> str:
@@ -140,7 +130,7 @@ Recommend 3 repos most worth exploring:
 **[repo name]** - One-line reason.
 
 Pick from the list above. Be specific. Max 150 words total."""
-    return _call_gemini(prompt)
+    return get_ai_response(prompt)
 
 
 def compare_domains_ai(domain_a: str, domain_b: str,
@@ -163,7 +153,7 @@ Avg stars/repo: {data_b['avg_stars']:,}
 Which domain has a more mature ecosystem and why?
 
 ## COMMUNITY SIZE
-Compare community engagement (stars, repos).
+Compare community engagement.
 
 ## JOB MARKET OUTLOOK
 Which has better career prospects in 2026?
@@ -174,5 +164,5 @@ Which is easier to start with?
 ## VERDICT
 One paragraph: who should pick which, and why.
 
-Max 400 words. Be honest, no hedging."""
-    return _call_gemini(prompt)
+Max 400 words."""
+    return get_ai_response(prompt)
