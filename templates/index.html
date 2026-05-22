@@ -3,12 +3,39 @@
 
 {% block content %}
 
+<!-- ── TICKER BAR ── -->
+<div class="ticker-wrap">
+  <div class="ticker-label"><i class="fas fa-fire"></i> TRENDING</div>
+  <div class="ticker-track">
+    <div class="ticker-content" id="tickerContent">
+      <span class="tick-item">🔥 Python <span class="tick-up">+12.4k stars</span></span>
+      <span class="tick-item">⚡ Rust <span class="tick-up">+8.2k stars</span></span>
+      <span class="tick-item">🤖 LLM Tools <span class="tick-up">+24.1k stars</span></span>
+      <span class="tick-item">🌐 Next.js <span class="tick-up">+6.8k stars</span></span>
+      <span class="tick-item">🎮 Game Engines <span class="tick-up">+5.3k stars</span></span>
+      <span class="tick-item">☁️ DevOps <span class="tick-up">+9.7k stars</span></span>
+      <span class="tick-item">📱 Flutter <span class="tick-up">+4.2k stars</span></span>
+      <span class="tick-item">🔐 Security <span class="tick-up">+7.9k stars</span></span>
+      <span class="tick-item">🐳 Docker <span class="tick-up">+3.5k stars</span></span>
+      <span class="tick-item">🧠 AI Agents <span class="tick-up">+31.6k stars</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ── HERO ── -->
 <section class="hero">
-  <div class="hero-badge"><i class="fas fa-bolt"></i> <span data-i18n="hero_badge">AI-Powered Analysis</span></div>
+
+  <!-- Typewriter badge -->
+  <div class="hero-badge">
+    <i class="fas fa-bolt"></i>
+    <span id="typewriterText"></span><span class="cursor-blink">|</span>
+  </div>
+
   <h1 class="hero-title">
     <span data-i18n="hero_title1">Discover What</span><br>
     <span class="gradient-text" data-i18n="hero_title2">Developers Build</span>
   </h1>
+
   <p class="hero-sub" data-i18n="hero_sub">
     Search any technology domain. Get real GitHub data, AI-generated trend insights,
     interactive charts, and a personalized learning roadmap — instantly.
@@ -19,7 +46,6 @@
       <i class="fas fa-search search-icon"></i>
       <input
         type="text" name="query" id="queryInput"
-        data-i18n="search_placeholder"
         placeholder="e.g. machine learning, web3, rust game engine…"
         class="search-input" required autocomplete="off"
       />
@@ -38,7 +64,7 @@
     {% endfor %}
   </div>
 
-  <!-- Hero illustration: animated SVG -->
+  <!-- Animated SVG -->
   <div class="hero-visual">
     <svg viewBox="0 0 880 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
@@ -52,21 +78,24 @@
           <stop offset="50%" stop-color="#b794f4" stop-opacity="0.7"/>
           <stop offset="100%" stop-color="#4fd1c5" stop-opacity="0"/>
         </linearGradient>
+        <linearGradient id="line3" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#4fd1c5" stop-opacity="0"/>
+          <stop offset="50%" stop-color="#f6ad55" stop-opacity="0.6"/>
+          <stop offset="100%" stop-color="#4fd1c5" stop-opacity="0"/>
+        </linearGradient>
       </defs>
-      <!-- Wavy lines -->
       <path d="M 0 100 Q 220 40, 440 100 T 880 100" stroke="url(#line1)" stroke-width="2" fill="none">
         <animate attributeName="d" dur="6s" repeatCount="indefinite"
-          values="M 0 100 Q 220 40, 440 100 T 880 100;
-                  M 0 100 Q 220 160, 440 100 T 880 100;
-                  M 0 100 Q 220 40, 440 100 T 880 100"/>
+          values="M 0 100 Q 220 40, 440 100 T 880 100;M 0 100 Q 220 160, 440 100 T 880 100;M 0 100 Q 220 40, 440 100 T 880 100"/>
       </path>
       <path d="M 0 120 Q 220 60, 440 120 T 880 120" stroke="url(#line2)" stroke-width="2" fill="none">
         <animate attributeName="d" dur="8s" repeatCount="indefinite"
-          values="M 0 120 Q 220 180, 440 120 T 880 120;
-                  M 0 120 Q 220 60, 440 120 T 880 120;
-                  M 0 120 Q 220 180, 440 120 T 880 120"/>
+          values="M 0 120 Q 220 180, 440 120 T 880 120;M 0 120 Q 220 60, 440 120 T 880 120;M 0 120 Q 220 180, 440 120 T 880 120"/>
       </path>
-      <!-- Floating dots -->
+      <path d="M 0 80 Q 220 140, 440 80 T 880 80" stroke="url(#line3)" stroke-width="1.5" fill="none">
+        <animate attributeName="d" dur="10s" repeatCount="indefinite"
+          values="M 0 80 Q 220 140, 440 80 T 880 80;M 0 80 Q 220 40, 440 80 T 880 80;M 0 80 Q 220 140, 440 80 T 880 80"/>
+      </path>
       <g>
         <circle cx="150" cy="80" r="3" fill="#7c9eff">
           <animate attributeName="cy" values="80;60;80" dur="3s" repeatCount="indefinite"/>
@@ -80,48 +109,108 @@
           <animate attributeName="cy" values="90;70;90" dur="3.5s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0.3;1;0.3" dur="3.5s" repeatCount="indefinite"/>
         </circle>
-        <circle cx="730" cy="140" r="2.5" fill="#7c9eff">
+        <circle cx="730" cy="140" r="2.5" fill="#f6ad55">
           <animate attributeName="cy" values="140;120;140" dur="4.5s" repeatCount="indefinite"/>
           <animate attributeName="opacity" values="0.4;1;0.4" dur="4.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="440" cy="100" r="4" fill="#fc8181">
+          <animate attributeName="cy" values="100;75;100" dur="5s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.2;0.9;0.2" dur="5s" repeatCount="indefinite"/>
         </circle>
       </g>
     </svg>
   </div>
 </section>
 
-<section class="features">
-  <div class="feat-card">
-    <i class="fas fa-code-branch feat-icon"></i>
-    <h3 data-i18n="feat1_title">Live GitHub Data</h3>
-    <p data-i18n="feat1_desc">Pulls real-time repository data — stars, forks, languages, topics, and commit activity.</p>
+<!-- ── PLATFORM STATS ── -->
+<section class="platform-stats-section">
+  <div class="pstat-card">
+    <div class="pstat-icon" style="background:linear-gradient(135deg,rgba(124,158,255,0.2),rgba(124,158,255,0.05))">
+      <i class="fas fa-users" style="color:#7c9eff"></i>
+    </div>
+    <div class="pstat-val" id="pstatUsers">—</div>
+    <div class="pstat-label">Students</div>
   </div>
-  <div class="feat-card">
-    <i class="fas fa-brain feat-icon"></i>
-    <h3 data-i18n="feat2_title">AI Insights</h3>
-    <p data-i18n="feat2_desc">Advanced prompt engineering extracts trends, rising stars, gaps, and future predictions.</p>
+  <div class="pstat-card">
+    <div class="pstat-icon" style="background:linear-gradient(135deg,rgba(183,148,244,0.2),rgba(183,148,244,0.05))">
+      <i class="fas fa-search" style="color:#b794f4"></i>
+    </div>
+    <div class="pstat-val" id="pstatSearches">—</div>
+    <div class="pstat-label">Searches</div>
   </div>
-  <div class="feat-card">
-    <i class="fas fa-chart-bar feat-icon"></i>
-    <h3 data-i18n="feat3_title">5 Visual Charts</h3>
-    <p data-i18n="feat3_desc">Stars ranking, language distribution, activity scatter, topic word cloud, and timeline.</p>
+  <div class="pstat-card">
+    <div class="pstat-icon" style="background:linear-gradient(135deg,rgba(79,209,197,0.2),rgba(79,209,197,0.05))">
+      <i class="fas fa-code" style="color:#4fd1c5"></i>
+    </div>
+    <div class="pstat-val" id="pstatProjects">—</div>
+    <div class="pstat-label">Projects</div>
   </div>
-  <div class="feat-card">
-    <i class="fas fa-road feat-icon"></i>
-    <h3 data-i18n="feat4_title">Learning Roadmap</h3>
-    <p data-i18n="feat4_desc">AI generates a custom 3-phase learning path based on the actual tools used by top projects.</p>
-  </div>
-  <div class="feat-card">
-    <i class="fas fa-comments feat-icon"></i>
-    <h3 data-i18n="feat5_title">AI Chat</h3>
-    <p data-i18n="feat5_desc">Ask follow-up questions about your results and get instant, contextual answers.</p>
-  </div>
-  <div class="feat-card">
-    <i class="fas fa-share-alt feat-icon"></i>
-    <h3 data-i18n="feat6_title">PDF + Share</h3>
-    <p data-i18n="feat6_desc">Export analysis as a clean PDF report or share a public link with your team.</p>
+  <div class="pstat-card">
+    <div class="pstat-icon" style="background:linear-gradient(135deg,rgba(246,173,85,0.2),rgba(246,173,85,0.05))">
+      <i class="fas fa-bolt" style="color:#f6ad55"></i>
+    </div>
+    <div class="pstat-val">Live</div>
+    <div class="pstat-label">AI Status</div>
   </div>
 </section>
 
+<!-- ── FEATURES ── -->
+<section class="features">
+  <div class="feat-card feat-blue">
+    <div class="feat-icon-wrap"><i class="fas fa-code-branch feat-icon"></i></div>
+    <h3 data-i18n="feat1_title">Live GitHub Data</h3>
+    <p data-i18n="feat1_desc">Real-time repository data — stars, forks, languages, topics, and commit activity.</p>
+    <div class="feat-glow"></div>
+  </div>
+  <div class="feat-card feat-purple">
+    <div class="feat-icon-wrap"><i class="fas fa-brain feat-icon"></i></div>
+    <h3 data-i18n="feat2_title">AI Insights</h3>
+    <p data-i18n="feat2_desc">Advanced Gemini AI extracts trends, rising stars, gaps, and future predictions.</p>
+    <div class="feat-glow"></div>
+  </div>
+  <div class="feat-card feat-teal">
+    <div class="feat-icon-wrap"><i class="fas fa-chart-bar feat-icon"></i></div>
+    <h3 data-i18n="feat3_title">5 Visual Charts</h3>
+    <p data-i18n="feat3_desc">Stars ranking, language distribution, activity scatter, topic word cloud, and timeline.</p>
+    <div class="feat-glow"></div>
+  </div>
+  <div class="feat-card feat-orange">
+    <div class="feat-icon-wrap"><i class="fas fa-road feat-icon"></i></div>
+    <h3 data-i18n="feat4_title">Learning Roadmap</h3>
+    <p data-i18n="feat4_desc">AI generates a custom 3-phase learning path based on actual tools used by top projects.</p>
+    <div class="feat-glow"></div>
+  </div>
+  <div class="feat-card feat-pink">
+    <div class="feat-icon-wrap"><i class="fas fa-comments feat-icon"></i></div>
+    <h3 data-i18n="feat5_title">AI Chat</h3>
+    <p data-i18n="feat5_desc">Ask follow-up questions about your results and get instant, contextual answers.</p>
+    <div class="feat-glow"></div>
+  </div>
+  <div class="feat-card feat-green">
+    <div class="feat-icon-wrap"><i class="fas fa-share-alt feat-icon"></i></div>
+    <h3 data-i18n="feat6_title">PDF + Share</h3>
+    <p data-i18n="feat6_desc">Export analysis as a clean PDF report or share a public link with your team.</p>
+    <div class="feat-glow"></div>
+  </div>
+</section>
+
+<!-- ── HEATMAP SECTION ── -->
+<section class="heatmap-section">
+  <h2 class="section-title"><i class="fas fa-calendar-alt"></i> Activity Heatmap</h2>
+  <p class="heatmap-sub">Weekly search activity across StackSage</p>
+  <div class="heatmap-grid" id="heatmapGrid"></div>
+  <div class="heatmap-legend">
+    <span style="color:var(--text-faint);font-size:.75rem">Less</span>
+    <div class="hm-box" style="opacity:.15"></div>
+    <div class="hm-box" style="opacity:.35"></div>
+    <div class="hm-box" style="opacity:.6"></div>
+    <div class="hm-box" style="opacity:.8"></div>
+    <div class="hm-box" style="opacity:1"></div>
+    <span style="color:var(--text-faint);font-size:.75rem">More</span>
+  </div>
+</section>
+
+<!-- ── RECENT SEARCHES ── -->
 {% if recent_searches %}
 <section class="recent-section">
   <h2 class="section-title"><i class="fas fa-history"></i> <span data-i18n="recent_title">Recent Searches</span></h2>
@@ -136,4 +225,127 @@
 </section>
 {% endif %}
 
+<!-- ── COMMAND PALETTE ── -->
+<div class="cmd-overlay hidden" id="cmdOverlay" onclick="closeCmd()"></div>
+<div class="cmd-palette hidden" id="cmdPalette">
+  <div class="cmd-header">
+    <i class="fas fa-search cmd-search-icon"></i>
+    <input type="text" id="cmdInput" placeholder="Search anything…" oninput="filterCmd(this.value)" onkeydown="cmdKeydown(event)"/>
+    <kbd>ESC</kbd>
+  </div>
+  <div class="cmd-list" id="cmdList">
+    <div class="cmd-section">Quick actions</div>
+    <div class="cmd-item" onclick="cmdGo('/')"><i class="fas fa-home"></i> Go to Home</div>
+    <div class="cmd-item" onclick="cmdGo('/compare')"><i class="fas fa-balance-scale"></i> Compare Technologies</div>
+    <div class="cmd-item" onclick="cmdGo('/history')"><i class="fas fa-history"></i> View History</div>
+    <div class="cmd-item" onclick="cmdGo('/bookmarks')"><i class="fas fa-bookmark"></i> My Bookmarks</div>
+    <div class="cmd-item" onclick="cmdGo('/student-zone')"><i class="fas fa-graduation-cap"></i> Student Zone</div>
+    <div class="cmd-section">Popular searches</div>
+    <div class="cmd-item cmd-search-item" data-query="machine learning"><i class="fas fa-brain"></i> machine learning</div>
+    <div class="cmd-item cmd-search-item" data-query="rust"><i class="fas fa-cog"></i> rust</div>
+    <div class="cmd-item cmd-search-item" data-query="react"><i class="fas fa-atom"></i> react</div>
+    <div class="cmd-item cmd-search-item" data-query="devops"><i class="fas fa-server"></i> devops</div>
+    <div class="cmd-item cmd-search-item" data-query="llm"><i class="fas fa-robot"></i> llm tools</div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ── TYPEWRITER ── */
+const phrases = ['AI-Powered Analysis', 'GitHub Trend Intelligence', 'Learn What Devs Build', 'Explore Tech Trends'];
+let pi = 0, ci = 0, deleting = false;
+function typewriter() {
+  const el = document.getElementById('typewriterText');
+  if (!el) return;
+  const word = phrases[pi];
+  if (!deleting) {
+    el.textContent = word.slice(0, ++ci);
+    if (ci === word.length) { deleting = true; setTimeout(typewriter, 1800); return; }
+  } else {
+    el.textContent = word.slice(0, --ci);
+    if (ci === 0) { deleting = false; pi = (pi + 1) % phrases.length; }
+  }
+  setTimeout(typewriter, deleting ? 60 : 90);
+}
+typewriter();
+
+/* ── TICKER ── */
+(function() {
+  const t = document.getElementById('tickerContent');
+  if (!t) return;
+  const clone = t.cloneNode(true);
+  t.parentNode.appendChild(clone);
+})();
+
+/* ── PLATFORM STATS ── */
+fetch('/api/stats').then(r => r.json()).then(d => {
+  const fmt = n => n >= 1000 ? (n/1000).toFixed(1) + 'k' : n;
+  document.getElementById('pstatUsers').textContent    = fmt(d.total_users    || 0);
+  document.getElementById('pstatSearches').textContent = fmt(d.total_searches || 0);
+  document.getElementById('pstatProjects').textContent = fmt(d.total_projects || 0);
+}).catch(() => {});
+
+/* ── HEATMAP ── */
+(function() {
+  const grid = document.getElementById('heatmapGrid');
+  if (!grid) return;
+  const weeks = 18, days = 7;
+  for (let w = 0; w < weeks; w++) {
+    for (let d = 0; d < days; d++) {
+      const box = document.createElement('div');
+      box.className = 'hm-cell';
+      const val = Math.random();
+      const opacity = val < 0.3 ? 0.08 : val < 0.55 ? 0.25 : val < 0.75 ? 0.5 : val < 0.9 ? 0.75 : 1;
+      box.style.opacity = opacity;
+      box.title = `${Math.floor(val * 20)} searches`;
+      grid.appendChild(box);
+    }
+  }
+})();
+
+/* ── COMMAND PALETTE ── */
+function openCmd() {
+  document.getElementById('cmdPalette').classList.remove('hidden');
+  document.getElementById('cmdOverlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('cmdInput')?.focus(), 50);
+}
+function closeCmd() {
+  document.getElementById('cmdPalette').classList.add('hidden');
+  document.getElementById('cmdOverlay').classList.add('hidden');
+}
+function cmdGo(url) { closeCmd(); window.location.href = url; }
+function filterCmd(val) {
+  const items = document.querySelectorAll('.cmd-item');
+  items.forEach(item => {
+    item.style.display = item.textContent.toLowerCase().includes(val.toLowerCase()) ? '' : 'none';
+  });
+}
+function cmdKeydown(e) {
+  if (e.key === 'Escape') closeCmd();
+  if (e.key === 'Enter') {
+    const val = document.getElementById('cmdInput').value.trim();
+    if (val) { closeCmd(); setQuery(val); document.getElementById('searchForm')?.submit(); }
+  }
+}
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openCmd(); }
+});
+document.querySelectorAll('.cmd-search-item').forEach(item => {
+  item.addEventListener('click', () => {
+    closeCmd();
+    setQuery(item.dataset.query);
+    document.getElementById('searchForm')?.submit();
+  });
+});
+
+/* ── SMOOTH THEME TRANSITION ── */
+const origToggle = window.toggleTheme;
+window.toggleTheme = function() {
+  document.documentElement.style.transition = 'background-color 0.5s ease, color 0.5s ease';
+  origToggle && origToggle();
+  setTimeout(() => document.documentElement.style.transition = '', 600);
+};
+</script>
 {% endblock %}
