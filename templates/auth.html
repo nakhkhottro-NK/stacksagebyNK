@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Sign Up' if mode == 'signup' else 'Log In' }}{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card glassmorphism">
+
+    <div class="auth-logo">
+      <i class="fas fa-satellite-dish accent"></i>
+      <span>Stack<span class="accent">Sage</span></span>
+    </div>
+
+    {% if mode == 'signup' %}
+      <h1 class="auth-title">Create your account</h1>
+      <p class="auth-sub">Join the Student Zone and track your learning journey.</p>
+    {% else %}
+      <h1 class="auth-title">Welcome back</h1>
+      <p class="auth-sub">Log in to access your Student Zone.</p>
+    {% endif %}
+
+    <form method="POST" class="auth-form" autocomplete="on">
+      <div class="form-group">
+        <label for="email"><i class="fas fa-envelope"></i> Email</label>
+        <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email"/>
+      </div>
+
+      <div class="form-group">
+        <label for="password"><i class="fas fa-lock"></i> Password</label>
+        <input type="password" id="password" name="password" required placeholder="••••••••" autocomplete="{{ 'new-password' if mode == 'signup' else 'current-password' }}"/>
+      </div>
+
+      {% if mode == 'signup' %}
+      <div class="form-group">
+        <label for="confirm"><i class="fas fa-lock"></i> Confirm password</label>
+        <input type="password" id="confirm" name="confirm" required placeholder="••••••••" autocomplete="new-password"/>
+      </div>
+      {% endif %}
+
+      <button type="submit" class="btn-primary btn-full">
+        {% if mode == 'signup' %}
+          <i class="fas fa-user-plus"></i> Create account
+        {% else %}
+          <i class="fas fa-sign-in-alt"></i> Log in
+        {% endif %}
+      </button>
+    </form>
+
+    <p class="auth-switch">
+      {% if mode == 'signup' %}
+        Already have an account? <a href="{{ url_for('login') }}">Log in</a>
+      {% else %}
+        No account yet? <a href="{{ url_for('signup') }}">Sign up free</a>
+      {% endif %}
+    </p>
+
+  </div>
+</div>
+
+<style>
+.auth-wrapper {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 2.5rem 2rem;
+  border-radius: 1.5rem;
+  text-align: center;
+}
+.auth-logo {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  letter-spacing: 1px;
+}
+.auth-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+.auth-sub {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1.8rem;
+}
+.auth-form { text-align: left; }
+.form-group {
+  margin-bottom: 1.1rem;
+}
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+.form-group label i { margin-right: 6px; }
+.form-group input {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.12));
+  background: var(--input-bg, rgba(255,255,255,0.05));
+  color: inherit;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.form-group input:focus {
+  outline: none;
+  border-color: var(--accent, #7c9eff);
+}
+.btn-full { width: 100%; margin-top: 0.5rem; }
+.auth-switch {
+  margin-top: 1.5rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+.auth-switch a { color: var(--accent, #7c9eff); text-decoration: none; }
+.auth-switch a:hover { text-decoration: underline; }
+</style>
+{% endblock %}

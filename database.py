@@ -46,6 +46,45 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS sessions (
         token TEXT PRIMARY KEY, user_id INTEGER NOT NULL,
         created_at TEXT NOT NULL )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS student_profiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER UNIQUE NOT NULL,
+    display_name TEXT NOT NULL DEFAULT '',
+    bio TEXT DEFAULT '',
+    skill_level TEXT DEFAULT 'beginner',
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id) )''')
+
+c.execute('''CREATE TABLE IF NOT EXISTS skill_tests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    topic TEXT NOT NULL,
+    score INTEGER NOT NULL,
+    total INTEGER NOT NULL,
+    badge TEXT DEFAULT '',
+    taken_at TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id) )''')
+
+c.execute('''CREATE TABLE IF NOT EXISTS student_projects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    tech_stack TEXT DEFAULT '',
+    github_url TEXT DEFAULT '',
+    live_url TEXT DEFAULT '',
+    status TEXT DEFAULT 'in_progress',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id) )''')
+
+c.execute('''CREATE TABLE IF NOT EXISTS ai_chats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    role TEXT NOT NULL,
+    message TEXT NOT NULL,
+    sent_at TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id) )''')
 
     conn.commit()
     conn.close()

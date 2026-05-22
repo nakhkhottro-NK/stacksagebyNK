@@ -40,6 +40,28 @@
       <i class="fas fa-bookmark"></i> <span data-i18n="nav_bookmarks">Bookmarks</span>
     </a>
 
+    <!-- ── STUDENT ZONE NAV (NEW) ── -->
+    {% if current_user %}
+      <a href="{{ url_for('student_zone') }}"
+         class="nav-link {% if request.endpoint == 'student_zone' %}active{% endif %}"
+         style="display:flex;align-items:center;gap:.4rem">
+        <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#7c9eff,#b794f4);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#fff;flex-shrink:0">
+          {{ current_user.email[0].upper() }}
+        </div>
+        <span>Student Zone</span>
+      </a>
+    {% else %}
+      <a href="{{ url_for('login') }}"
+         class="nav-link {% if request.endpoint == 'login' %}active{% endif %}">
+        <i class="fas fa-sign-in-alt"></i> <span>Log in</span>
+      </a>
+      <a href="{{ url_for('signup') }}"
+         style="padding:.35rem .9rem;border-radius:.5rem;font-size:.85rem;text-decoration:none;background:linear-gradient(135deg,#7c9eff,#b794f4);color:#fff;font-weight:600;">
+        Sign up
+      </a>
+    {% endif %}
+    <!-- ── END STUDENT ZONE NAV ── -->
+
     <div class="lang-switcher">
       <button class="lang-btn lang-active" data-lang="en" onclick="applyLanguage('en')">EN</button>
       <button class="lang-btn" data-lang="zh" onclick="applyLanguage('zh')">中文</button>
@@ -63,6 +85,25 @@
   <a href="/compare" class="nav-link"><i class="fas fa-balance-scale"></i> <span data-i18n="nav_compare">Compare</span></a>
   <a href="/history" class="nav-link"><i class="fas fa-history"></i> <span data-i18n="nav_history">History</span></a>
   <a href="/bookmarks" class="nav-link"><i class="fas fa-bookmark"></i> <span data-i18n="nav_bookmarks">Bookmarks</span></a>
+
+  <!-- ── STUDENT ZONE MOBILE NAV (NEW) ── -->
+  {% if current_user %}
+    <a href="{{ url_for('student_zone') }}" class="nav-link {% if request.endpoint == 'student_zone' %}active{% endif %}">
+      <i class="fas fa-graduation-cap"></i> Student Zone
+    </a>
+    <a href="{{ url_for('logout') }}" class="nav-link">
+      <i class="fas fa-sign-out-alt"></i> Log out
+    </a>
+  {% else %}
+    <a href="{{ url_for('login') }}" class="nav-link">
+      <i class="fas fa-sign-in-alt"></i> Log in
+    </a>
+    <a href="{{ url_for('signup') }}" class="nav-link">
+      <i class="fas fa-user-plus"></i> Sign up
+    </a>
+  {% endif %}
+  <!-- ── END STUDENT ZONE MOBILE NAV ── -->
+
   <div class="lang-switcher">
     <button class="lang-btn lang-active" data-lang="en" onclick="applyLanguage('en')">EN</button>
     <button class="lang-btn" data-lang="zh" onclick="applyLanguage('zh')">中文</button>

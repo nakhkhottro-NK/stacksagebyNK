@@ -13,9 +13,15 @@ from visualizer import (create_stars_chart, create_language_chart,
                         create_activity_scatter, create_wordcloud,
                         create_timeline_chart)
 from database import (init_db, save_search, get_recent_searches, get_search_by_id,
-                      add_bookmark, get_bookmarks, delete_bookmark,
-                      create_share_link, get_shared_search,
-                      save_user, get_user, create_user_session)
+#                       add_bookmark, get_bookmarks, delete_bookmark,
+#                       create_share_link, get_shared_search,
+#                       save_user, get_user, create_user_session,
+#                       get_user_from_session, get_user_by_id, delete_session,
+#                       get_or_create_profile, update_profile,
+#                       save_skill_test, get_skill_tests,
+#                       add_project, get_projects, update_project, delete_project,
+#                       save_chat_message, get_chat_history, clear_chat_history,
+#                       get_platform_stats)
 import json
 import io
 import os
@@ -24,7 +30,16 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET", "stacksage_secret_2025_change_me")
+def get_current_user():
+    token = request.cookies.get('session_token')
+    uid = get_user_from_session(token)
+    if uid:
+        return get_user_by_id(uid)
+    return None
 
+@app.context_processor
+def inject_user():
+    return dict(current_user=get_current_user())
 
 # ════════════════════════════════════════════════════════════════
 # CORE ROUTES
@@ -372,6 +387,314 @@ def export_pdf(search_id):
 # ════════════════════════════════════════════════════════════════
 # HEALTH + ERROR HANDLERS
 # ════════════════════════════════════════════════════════════════
+
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        email    = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        confirm  = request.form.get('confirm', '')
+
+        if not email or not password:
+            flash('Email and password are required.', 'error')
+            return redirect(url_for('signup'))
+        if password != confirm:
+            flash('Passwords do not match.', 'error')
+            return redirect(url_for('signup'))
+        if len(password) < 6:
+            flash('Password must be at least 6 characters.', 'error')
+            return redirect(url_for('signup'))
+
+        uid = save_user(email, password)
+        if uid is None:
+            flash('An account with that email already exists.', 'error')
+            return redirect(url_for('signup'))
+
+        token = create_user_session(uid)
+        resp  = make_response(redirect(url_for('student_zone')))
+        resp.set_cookie('session_token', token, max_age=60*60*24*30, httponly=True, samesite='Lax')
+        flash('Welcome to StackSage! Your Student Zone is ready.', 'success')
+        return resp
+
+    return render_template('auth.html', mode='signup', current_user=None)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email    = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+
+        uid = get_user(email, password)
+        if uid is None:
+            flash('Invalid email or password.', 'error')
+            return redirect(url_for('login'))
+
+        token = create_user_session(uid)
+        resp  = make_response(redirect(url_for('student_zone')))
+        resp.set_cookie('session_token', token, max_age=60*60*24*30, httponly=True, samesite='Lax')
+        flash(f'Welcome back!', 'success')
+        return resp
+
+    return render_template('auth.html', mode='login', current_user=None)
+
+
+@app.route('/logout')
+def logout():
+    token = request.cookies.get('session_token')
+    if token:
+        delete_session(token)
+    resp = make_response(redirect(url_for('index')))
+    resp.delete_cookie('session_token')
+    flash('You have been logged out.', 'success')
+    return resp
+
+
+# ════════════════════════════════════════════════════════════════
+# STUDENT ZONE — Main dashboard
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/student-zone')
+def student_zone():
+    user = get_current_user()
+    if not user:
+        flash('Please log in to access your Student Zone.', 'error')
+        return redirect(url_for('login'))
+
+    profile  = get_or_create_profile(user['id'], user['email'])
+    tests    = get_skill_tests(user['id'])
+    projects = get_projects(user['id'])
+    history  = get_chat_history(user['id'], limit=20)
+    stats    = get_platform_stats()
+
+    # Compute best badge across all tests
+    badge_rank = {'gold': 3, 'silver': 2, 'bronze': 1, '': 0}
+    best_badge = max((t['badge'] for t in tests), key=lambda b: badge_rank.get(b, 0), default='')
+
+    return render_template('student_zone.html',
+                           current_user=user,
+                           profile=profile,
+                           tests=tests,
+                           projects=projects,
+                           chat_history=history,
+                           best_badge=best_badge,
+                           stats=stats)
+
+
+# ════════════════════════════════════════════════════════════════
+# STUDENT ZONE — Profile update
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/student-zone/profile', methods=['POST'])
+def update_student_profile():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    data        = request.get_json()
+    display_name = data.get('display_name', '').strip()[:60]
+    bio          = data.get('bio', '').strip()[:300]
+    skill_level  = data.get('skill_level', 'beginner')
+
+    if skill_level not in ('beginner', 'intermediate', 'advanced'):
+        skill_level = 'beginner'
+
+    update_profile(user['id'], display_name, bio, skill_level)
+    return jsonify({'success': True})
+
+
+# ════════════════════════════════════════════════════════════════
+# STUDENT ZONE — Skill test (AI-generated questions)
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/api/student/generate-test', methods=['POST'])
+def generate_skill_test():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    data  = request.get_json()
+    topic = data.get('topic', 'Python').strip()[:50]
+    level = data.get('level', 'beginner')
+
+    prompt = f"""Generate a skill test for a {level} developer on the topic: {topic}.
+Return ONLY a JSON object (no markdown, no extra text) in this exact format:
+{{
+  "topic": "{topic}",
+  "questions": [
+    {{
+      "q": "Question text here?",
+      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
+      "answer": 0
+    }}
+  ]
+}}
+- Generate exactly 5 questions.
+- "answer" is the 0-based index of the correct option.
+- Questions should match {level} difficulty.
+- Keep each question short and clear."""
+
+    try:
+        import google.generativeai as genai
+        from config import GEMINI_API_KEY
+        genai.configure(api_key=GEMINI_API_KEY)
+        model    = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
+        text     = response.text.strip()
+        # Strip markdown fences if present
+        if text.startswith('```'):
+            text = text.split('```')[1]
+            if text.startswith('json'):
+                text = text[4:]
+        quiz = json.loads(text)
+        return jsonify({'success': True, 'quiz': quiz})
+    except Exception as e:
+        return jsonify({'error': f'Could not generate quiz: {str(e)}'}), 500
+
+
+@app.route('/api/student/submit-test', methods=['POST'])
+def submit_skill_test():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    data      = request.get_json()
+    topic     = data.get('topic', 'Unknown')
+    answers   = data.get('answers', [])   # list of chosen indices
+    questions = data.get('questions', []) # list of question objects
+
+    score = sum(
+        1 for i, q in enumerate(questions)
+        if i < len(answers) and answers[i] == q.get('answer')
+    )
+    total = len(questions)
+    badge = save_skill_test(user['id'], topic, score, total)
+    pct   = round((score / total) * 100) if total else 0
+
+    return jsonify({'success': True, 'score': score, 'total': total,
+                    'pct': pct, 'badge': badge})
+
+
+# ════════════════════════════════════════════════════════════════
+# STUDENT ZONE — Projects CRUD
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/api/student/projects', methods=['POST'])
+def create_project():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    data = request.get_json()
+    pid  = add_project(
+        user['id'],
+        data.get('title', 'Untitled')[:100],
+        data.get('description', '')[:500],
+        data.get('tech_stack', '')[:200],
+        data.get('github_url', '')[:300],
+        data.get('live_url', '')[:300],
+        data.get('status', 'in_progress')
+    )
+    return jsonify({'success': True, 'id': pid})
+
+
+@app.route('/api/student/projects/<int:pid>', methods=['PUT'])
+def edit_project(pid):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    data = request.get_json()
+    update_project(
+        pid, user['id'],
+        data.get('title', '')[:100],
+        data.get('description', '')[:500],
+        data.get('tech_stack', '')[:200],
+        data.get('github_url', '')[:300],
+        data.get('live_url', '')[:300],
+        data.get('status', 'in_progress')
+    )
+    return jsonify({'success': True})
+
+
+@app.route('/api/student/projects/<int:pid>', methods=['DELETE'])
+def remove_project(pid):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Not logged in'}), 401
+    delete_project(pid, user['id'])
+    return jsonify({'success': True})
+
+
+# ════════════════════════════════════════════════════════════════
+# STUDENT ZONE — Personal AI chat (private, saved per user)
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/api/student/chat', methods=['POST'])
+def student_ai_chat():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    data    = request.get_json()
+    message = data.get('message', '').strip()[:1000]
+    if not message:
+        return jsonify({'error': 'Empty message'}), 400
+
+    # Fetch last 10 messages for context
+    history = get_chat_history(user['id'], limit=10)
+    profile = get_or_create_profile(user['id'], user['email'])
+
+    context = "\n".join(
+        f"{'Student' if m['role']=='user' else 'AI'}: {m['message']}"
+        for m in history[-6:]
+    )
+
+    prompt = f"""You are a personal AI tutor inside StackSage, helping a {profile['skill_level']}-level developer.
+The student's name is {profile['display_name']}.
+
+Recent conversation:
+{context}
+
+Student: {message}
+
+Respond helpfully and concisely. Focus on practical advice, code examples when useful.
+Keep your response under 300 words."""
+
+    try:
+        import google.generativeai as genai
+        from config import GEMINI_API_KEY
+        genai.configure(api_key=GEMINI_API_KEY)
+        model    = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
+        reply    = response.text.strip()
+    except Exception as e:
+        reply = f"Sorry, I couldn't connect to the AI right now. ({e})"
+
+    # Save both sides
+    save_chat_message(user['id'], 'user', message)
+    save_chat_message(user['id'], 'ai',   reply)
+
+    return jsonify({'success': True, 'reply': reply})
+
+
+@app.route('/api/student/chat/clear', methods=['POST'])
+def clear_student_chat():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Not logged in'}), 401
+    clear_chat_history(user['id'])
+    return jsonify({'success': True})
+
+
+# ════════════════════════════════════════════════════════════════
+# PUBLIC STATS endpoint (used on homepage)
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/api/stats')
+def public_stats():
+    return jsonify(get_platform_stats())
 
 @app.route('/health')
 def health():
