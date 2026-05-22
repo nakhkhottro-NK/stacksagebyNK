@@ -1,20 +1,17 @@
-from openai import OpenAI
+"""
+ai_analyzer.py — AI Analysis using Google Gemini (FREE)
+"""
 import json
 import os
 
-client = OpenAI(
-    api_key=os.environ.get("DEEPSEEK_API_KEY", ""),
-    base_url="https://api.deepseek.com"
-)
-
-
 def _call_gemini(prompt: str) -> str:
     try:
-        response = client.chat.completions.create(
-            model="deepseek-chat",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content
+        import google.generativeai as genai
+        from config import GEMINI_API_KEY
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
+        return response.text.strip()
     except Exception as e:
         return f"AI analysis unavailable: {str(e)}"
 

@@ -4,7 +4,7 @@ Main Flask Application — Production Ready
 """
 
 from flask import (Flask, render_template, request, jsonify, redirect,
-                   url_for, flash, send_file, abort, Response)
+                   url_for, flash, send_file, abort, make_response)
 from github_api import search_repositories, get_trending_languages, get_repo_stats_summary
 from ai_analyzer import (analyze_repos, generate_learning_path,
                          compare_technologies, chat_about_results,
@@ -13,15 +13,15 @@ from visualizer import (create_stars_chart, create_language_chart,
                         create_activity_scatter, create_wordcloud,
                         create_timeline_chart)
 from database import (init_db, save_search, get_recent_searches, get_search_by_id,
-#                       add_bookmark, get_bookmarks, delete_bookmark,
-#                       create_share_link, get_shared_search,
-#                       save_user, get_user, create_user_session,
-#                       get_user_from_session, get_user_by_id, delete_session,
-#                       get_or_create_profile, update_profile,
-#                       save_skill_test, get_skill_tests,
-#                       add_project, get_projects, update_project, delete_project,
-#                       save_chat_message, get_chat_history, clear_chat_history,
-#                       get_platform_stats)
+                      add_bookmark, get_bookmarks, delete_bookmark,
+                      create_share_link, get_shared_search,
+                      save_user, get_user, create_user_session,
+                      get_user_from_session, get_user_by_id, delete_session,
+                      get_or_create_profile, update_profile,
+                      save_skill_test, get_skill_tests,
+                      add_project, get_projects, update_project, delete_project,
+                      save_chat_message, get_chat_history, clear_chat_history,
+                      get_platform_stats)
 import json
 import io
 import os
@@ -30,6 +30,8 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET", "stacksage_secret_2025_change_me")
+
+
 def get_current_user():
     token = request.cookies.get('session_token')
     uid = get_user_from_session(token)
@@ -37,9 +39,11 @@ def get_current_user():
         return get_user_by_id(uid)
     return None
 
+
 @app.context_processor
 def inject_user():
     return dict(current_user=get_current_user())
+
 
 # ════════════════════════════════════════════════════════════════
 # CORE ROUTES
@@ -63,7 +67,6 @@ def analyze():
         flash('Please enter a search query.', 'error')
         return redirect(url_for('index'))
 
-    # 1. Fetch GitHub Data
     repos_data = search_repositories(query, per_page=12)
 
     if 'error' in repos_data and not repos_data.get('repos'):
@@ -75,7 +78,6 @@ def analyze():
         flash(f'No repositories found for "{query}". Try a different keyword.', 'error')
         return redirect(url_for('index'))
 
-    # 2. Compute Statistics
     languages = get_trending_languages(repos)
     all_topics = {}
     for r in repos:
@@ -93,7 +95,6 @@ def analyze():
         'top_topics': dict(sorted(all_topics.items(), key=lambda x: x[1], reverse=True)[:15])
     }
 
-    # 3. AI Insights
     ai_insights = analyze_repos(query, repos_data)
     learning_path = generate_learning_path(domain, languages, all_topics)
     ai_recommendations = recommend_repos(query, repos)
@@ -102,7 +103,6 @@ def analyze():
     if len(languages) >= 2:
         tech_comparison = compare_technologies(list(languages.keys())[:4], domain)
 
-    # 4. Generate Charts
     charts = {
         'stars': create_stars_chart(repos),
         'languages': create_language_chart(languages),
@@ -111,7 +111,6 @@ def analyze():
         'timeline': create_timeline_chart(repos)
     }
 
-    # 5. Persist to DB
     search_id = save_search(query, domain, repos, ai_insights)
 
     return render_template('results.html',
@@ -136,7 +135,7 @@ def bookmarks():
 
 
 # ════════════════════════════════════════════════════════════════
-# DOMAIN COMPARISON (NEW)
+# DOMAIN COMPARISON
 # ════════════════════════════════════════════════════════════════
 
 @app.route('/compare')
@@ -184,7 +183,7 @@ def compare_run():
 
 
 # ════════════════════════════════════════════════════════════════
-# AI CHAT (NEW)
+# AI CHAT
 # ════════════════════════════════════════════════════════════════
 
 @app.route('/api/chat', methods=['POST'])
@@ -243,7 +242,7 @@ def quick_compare():
 
 
 # ════════════════════════════════════════════════════════════════
-# SHARE LINK (NEW)
+# SHARE LINK
 # ════════════════════════════════════════════════════════════════
 
 @app.route('/api/share/<int:search_id>', methods=['POST'])
@@ -290,7 +289,7 @@ def view_shared(token):
 
 
 # ════════════════════════════════════════════════════════════════
-# PDF EXPORT (NEW)
+# PDF EXPORT
 # ════════════════════════════════════════════════════════════════
 
 @app.route('/export/pdf/<int:search_id>')
@@ -385,9 +384,8 @@ def export_pdf(search_id):
 
 
 # ════════════════════════════════════════════════════════════════
-# HEALTH + ERROR HANDLERS
+# AUTH ROUTES
 # ════════════════════════════════════════════════════════════════
-
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -434,7 +432,7 @@ def login():
         token = create_user_session(uid)
         resp  = make_response(redirect(url_for('student_zone')))
         resp.set_cookie('session_token', token, max_age=60*60*24*30, httponly=True, samesite='Lax')
-        flash(f'Welcome back!', 'success')
+        flash('Welcome back!', 'success')
         return resp
 
     return render_template('auth.html', mode='login', current_user=None)
@@ -452,7 +450,7 @@ def logout():
 
 
 # ════════════════════════════════════════════════════════════════
-# STUDENT ZONE — Main dashboard
+# STUDENT ZONE
 # ════════════════════════════════════════════════════════════════
 
 @app.route('/student-zone')
@@ -468,7 +466,6 @@ def student_zone():
     history  = get_chat_history(user['id'], limit=20)
     stats    = get_platform_stats()
 
-    # Compute best badge across all tests
     badge_rank = {'gold': 3, 'silver': 2, 'bronze': 1, '': 0}
     best_badge = max((t['badge'] for t in tests), key=lambda b: badge_rank.get(b, 0), default='')
 
@@ -482,17 +479,13 @@ def student_zone():
                            stats=stats)
 
 
-# ════════════════════════════════════════════════════════════════
-# STUDENT ZONE — Profile update
-# ════════════════════════════════════════════════════════════════
-
 @app.route('/student-zone/profile', methods=['POST'])
 def update_student_profile():
     user = get_current_user()
     if not user:
         return jsonify({'error': 'Not logged in'}), 401
 
-    data        = request.get_json()
+    data         = request.get_json()
     display_name = data.get('display_name', '').strip()[:60]
     bio          = data.get('bio', '').strip()[:300]
     skill_level  = data.get('skill_level', 'beginner')
@@ -503,10 +496,6 @@ def update_student_profile():
     update_profile(user['id'], display_name, bio, skill_level)
     return jsonify({'success': True})
 
-
-# ════════════════════════════════════════════════════════════════
-# STUDENT ZONE — Skill test (AI-generated questions)
-# ════════════════════════════════════════════════════════════════
 
 @app.route('/api/student/generate-test', methods=['POST'])
 def generate_skill_test():
@@ -542,7 +531,6 @@ Return ONLY a JSON object (no markdown, no extra text) in this exact format:
         model    = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt)
         text     = response.text.strip()
-        # Strip markdown fences if present
         if text.startswith('```'):
             text = text.split('```')[1]
             if text.startswith('json'):
@@ -561,8 +549,8 @@ def submit_skill_test():
 
     data      = request.get_json()
     topic     = data.get('topic', 'Unknown')
-    answers   = data.get('answers', [])   # list of chosen indices
-    questions = data.get('questions', []) # list of question objects
+    answers   = data.get('answers', [])
+    questions = data.get('questions', [])
 
     score = sum(
         1 for i, q in enumerate(questions)
@@ -575,10 +563,6 @@ def submit_skill_test():
     return jsonify({'success': True, 'score': score, 'total': total,
                     'pct': pct, 'badge': badge})
 
-
-# ════════════════════════════════════════════════════════════════
-# STUDENT ZONE — Projects CRUD
-# ════════════════════════════════════════════════════════════════
 
 @app.route('/api/student/projects', methods=['POST'])
 def create_project():
@@ -627,10 +611,6 @@ def remove_project(pid):
     return jsonify({'success': True})
 
 
-# ════════════════════════════════════════════════════════════════
-# STUDENT ZONE — Personal AI chat (private, saved per user)
-# ════════════════════════════════════════════════════════════════
-
 @app.route('/api/student/chat', methods=['POST'])
 def student_ai_chat():
     user = get_current_user()
@@ -642,9 +622,8 @@ def student_ai_chat():
     if not message:
         return jsonify({'error': 'Empty message'}), 400
 
-    # Fetch last 10 messages for context
-    history = get_chat_history(user['id'], limit=10)
-    profile = get_or_create_profile(user['id'], user['email'])
+    history  = get_chat_history(user['id'], limit=10)
+    profile  = get_or_create_profile(user['id'], user['email'])
 
     context = "\n".join(
         f"{'Student' if m['role']=='user' else 'AI'}: {m['message']}"
@@ -672,7 +651,6 @@ Keep your response under 300 words."""
     except Exception as e:
         reply = f"Sorry, I couldn't connect to the AI right now. ({e})"
 
-    # Save both sides
     save_chat_message(user['id'], 'user', message)
     save_chat_message(user['id'], 'ai',   reply)
 
@@ -688,13 +666,14 @@ def clear_student_chat():
     return jsonify({'success': True})
 
 
-# ════════════════════════════════════════════════════════════════
-# PUBLIC STATS endpoint (used on homepage)
-# ════════════════════════════════════════════════════════════════
-
 @app.route('/api/stats')
 def public_stats():
     return jsonify(get_platform_stats())
+
+
+# ════════════════════════════════════════════════════════════════
+# HEALTH + ERROR HANDLERS
+# ════════════════════════════════════════════════════════════════
 
 @app.route('/health')
 def health():
@@ -715,5 +694,4 @@ if __name__ == '__main__':
     print("=" * 50)
     app.run(debug=True, port=5000)
 else:
-    # Production (gunicorn)
     init_db()

@@ -1,6 +1,5 @@
 """
 database.py — SQLite Persistence Layer
-Adds: share links, user accounts.
 """
 
 import sqlite3
@@ -46,45 +45,46 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS sessions (
         token TEXT PRIMARY KEY, user_id INTEGER NOT NULL,
         created_at TEXT NOT NULL )''')
+
     c.execute('''CREATE TABLE IF NOT EXISTS student_profiles (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER UNIQUE NOT NULL,
-    display_name TEXT NOT NULL DEFAULT '',
-    bio TEXT DEFAULT '',
-    skill_level TEXT DEFAULT 'beginner',
-    created_at TEXT NOT NULL,
-    FOREIGN KEY(user_id) REFERENCES users(id) )''')
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER UNIQUE NOT NULL,
+        display_name TEXT NOT NULL DEFAULT '',
+        bio TEXT DEFAULT '',
+        skill_level TEXT DEFAULT 'beginner',
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) )''')
 
-c.execute('''CREATE TABLE IF NOT EXISTS skill_tests (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    topic TEXT NOT NULL,
-    score INTEGER NOT NULL,
-    total INTEGER NOT NULL,
-    badge TEXT DEFAULT '',
-    taken_at TEXT NOT NULL,
-    FOREIGN KEY(user_id) REFERENCES users(id) )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS skill_tests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        topic TEXT NOT NULL,
+        score INTEGER NOT NULL,
+        total INTEGER NOT NULL,
+        badge TEXT DEFAULT '',
+        taken_at TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) )''')
 
-c.execute('''CREATE TABLE IF NOT EXISTS student_projects (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT DEFAULT '',
-    tech_stack TEXT DEFAULT '',
-    github_url TEXT DEFAULT '',
-    live_url TEXT DEFAULT '',
-    status TEXT DEFAULT 'in_progress',
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    FOREIGN KEY(user_id) REFERENCES users(id) )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS student_projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        tech_stack TEXT DEFAULT '',
+        github_url TEXT DEFAULT '',
+        live_url TEXT DEFAULT '',
+        status TEXT DEFAULT 'in_progress',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) )''')
 
-c.execute('''CREATE TABLE IF NOT EXISTS ai_chats (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    role TEXT NOT NULL,
-    message TEXT NOT NULL,
-    sent_at TEXT NOT NULL,
-    FOREIGN KEY(user_id) REFERENCES users(id) )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS ai_chats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        role TEXT NOT NULL,
+        message TEXT NOT NULL,
+        sent_at TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) )''')
 
     conn.commit()
     conn.close()
@@ -147,7 +147,7 @@ def delete_bookmark(bookmark_id):
     conn.commit(); conn.close()
 
 
-# ── Share Links (NEW) ───────────────────────────────────────
+# ── Share Links ─────────────────────────────────────────────
 def create_share_link(token, search_id):
     conn = _get_conn(); c = conn.cursor()
     c.execute('INSERT INTO share_links (token,search_id,created_at) VALUES (?,?,?)',
@@ -164,7 +164,7 @@ def get_shared_search(token):
     return None
 
 
-# ── Users (NEW) ────────────────────────────────────────────
+# ── Users ───────────────────────────────────────────────────
 def _hash_pw(password):
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
 
@@ -190,6 +190,15 @@ def get_user(email, password):
     return row[0] if row else None
 
 
+def get_user_by_id(user_id):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('SELECT id, email, created_at FROM users WHERE id=?', (user_id,))
+    row = c.fetchone(); conn.close()
+    if row:
+        return {'id': row[0], 'email': row[1], 'created_at': row[2]}
+    return None
+
+
 def create_user_session(user_id):
     token = secrets.token_urlsafe(24)
     conn = _get_conn(); c = conn.cursor()
@@ -197,3 +206,164 @@ def create_user_session(user_id):
               (token, user_id, datetime.now().isoformat()))
     conn.commit(); conn.close()
     return token
+
+
+def get_user_from_session(token):
+    if not token:
+        return None
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('SELECT user_id FROM sessions WHERE token=?', (token,))
+    row = c.fetchone(); conn.close()
+    return row[0] if row else None
+
+
+def delete_session(token):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('DELETE FROM sessions WHERE token=?', (token,))
+    conn.commit(); conn.close()
+
+
+# ── Student Profile ─────────────────────────────────────────
+def get_or_create_profile(user_id, email):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('SELECT id, display_name, bio, skill_level FROM student_profiles WHERE user_id=?', (user_id,))
+    row = c.fetchone()
+    if not row:
+        name = email.split('@')[0]
+        c.execute(
+            'INSERT INTO student_profiles (user_id, display_name, bio, skill_level, created_at) VALUES (?,?,?,?,?)',
+            (user_id, name, '', 'beginner', datetime.now().isoformat())
+        )
+        conn.commit()
+        profile = {'display_name': name, 'bio': '', 'skill_level': 'beginner'}
+    else:
+        profile = {'display_name': row[1], 'bio': row[2], 'skill_level': row[3]}
+    conn.close()
+    return profile
+
+
+def update_profile(user_id, display_name, bio, skill_level):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute(
+        'UPDATE student_profiles SET display_name=?, bio=?, skill_level=? WHERE user_id=?',
+        (display_name, bio, skill_level, user_id)
+    )
+    conn.commit(); conn.close()
+
+
+# ── Skill Tests ─────────────────────────────────────────────
+def save_skill_test(user_id, topic, score, total):
+    pct = (score / total) * 100
+    badge = 'gold' if pct >= 90 else ('silver' if pct >= 70 else ('bronze' if pct >= 50 else ''))
+    conn = _get_conn(); c = conn.cursor()
+    c.execute(
+        'INSERT INTO skill_tests (user_id, topic, score, total, badge, taken_at) VALUES (?,?,?,?,?,?)',
+        (user_id, topic, score, total, badge, datetime.now().isoformat())
+    )
+    conn.commit(); conn.close()
+    return badge
+
+
+def get_skill_tests(user_id):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute(
+        'SELECT id, topic, score, total, badge, taken_at FROM skill_tests WHERE user_id=? ORDER BY taken_at DESC',
+        (user_id,)
+    )
+    rows = c.fetchall(); conn.close()
+    return [
+        {'id': r[0], 'topic': r[1], 'score': r[2], 'total': r[3],
+         'badge': r[4], 'pct': round((r[2]/r[3])*100), 'taken_at': r[5]}
+        for r in rows
+    ]
+
+
+# ── Projects ────────────────────────────────────────────────
+def add_project(user_id, title, description, tech_stack, github_url, live_url, status):
+    now = datetime.now().isoformat()
+    conn = _get_conn(); c = conn.cursor()
+    c.execute(
+        '''INSERT INTO student_projects
+           (user_id, title, description, tech_stack, github_url, live_url, status, created_at, updated_at)
+           VALUES (?,?,?,?,?,?,?,?,?)''',
+        (user_id, title, description, tech_stack, github_url, live_url, status, now, now)
+    )
+    conn.commit()
+    pid = c.lastrowid; conn.close()
+    return pid
+
+
+def get_projects(user_id):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute(
+        '''SELECT id, title, description, tech_stack, github_url, live_url, status, created_at, updated_at
+           FROM student_projects WHERE user_id=? ORDER BY updated_at DESC''',
+        (user_id,)
+    )
+    rows = c.fetchall(); conn.close()
+    return [
+        {'id': r[0], 'title': r[1], 'description': r[2], 'tech_stack': r[3],
+         'github_url': r[4], 'live_url': r[5], 'status': r[6],
+         'created_at': r[7], 'updated_at': r[8]}
+        for r in rows
+    ]
+
+
+def update_project(project_id, user_id, title, description, tech_stack, github_url, live_url, status):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute(
+        '''UPDATE student_projects SET title=?, description=?, tech_stack=?, github_url=?,
+           live_url=?, status=?, updated_at=? WHERE id=? AND user_id=?''',
+        (title, description, tech_stack, github_url, live_url, status,
+         datetime.now().isoformat(), project_id, user_id)
+    )
+    conn.commit(); conn.close()
+
+
+def delete_project(project_id, user_id):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('DELETE FROM student_projects WHERE id=? AND user_id=?', (project_id, user_id))
+    conn.commit(); conn.close()
+
+
+# ── AI Chat ─────────────────────────────────────────────────
+def save_chat_message(user_id, role, message):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute(
+        'INSERT INTO ai_chats (user_id, role, message, sent_at) VALUES (?,?,?,?)',
+        (user_id, role, message, datetime.now().isoformat())
+    )
+    conn.commit(); conn.close()
+
+
+def get_chat_history(user_id, limit=30):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute(
+        'SELECT role, message, sent_at FROM ai_chats WHERE user_id=? ORDER BY sent_at DESC LIMIT ?',
+        (user_id, limit)
+    )
+    rows = c.fetchall(); conn.close()
+    return [{'role': r[0], 'message': r[1], 'sent_at': r[2]} for r in reversed(rows)]
+
+
+def clear_chat_history(user_id):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('DELETE FROM ai_chats WHERE user_id=?', (user_id,))
+    conn.commit(); conn.close()
+
+
+# ── Platform Stats ───────────────────────────────────────────
+def get_platform_stats():
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('SELECT COUNT(*) FROM users')
+    total_users = c.fetchone()[0]
+    c.execute('SELECT COUNT(*) FROM searches')
+    total_searches = c.fetchone()[0]
+    c.execute('SELECT COUNT(*) FROM student_projects')
+    total_projects = c.fetchone()[0]
+    conn.close()
+    return {
+        'total_users': total_users,
+        'total_searches': total_searches,
+        'total_projects': total_projects
+    }
