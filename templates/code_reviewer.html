@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}AI Code Reviewer{% endblock %}
+{% block content %}
+<div class="cr-wrap">
+  <div class="rg-header">
+    <div class="hero-eyebrow">
+      <div class="eyebrow-line"></div>
+      <div class="eyebrow-text">AI-Powered Tool</div>
+      <div class="eyebrow-line r"></div>
+    </div>
+    <h1 class="rg-title">Code <span class="t-morph">Reviewer</span></h1>
+    <p class="rg-sub">Paste your code — AI gives instant feedback on bugs, performance & security</p>
+  </div>
+
+  <div class="rg-grid">
+    <div class="rg-form-wrap">
+      <div class="card">
+        <div class="card-header"><i class="fas fa-code"></i> Your Code</div>
+        <div class="card-body">
+          <div class="rg-field">
+            <label>Language</label>
+            <select id="codeLanguage">
+              <option value="auto">Auto detect</option>
+              <option value="python">Python</option>
+              <option value="javascript">JavaScript</option>
+              <option value="typescript">TypeScript</option>
+              <option value="java">Java</option>
+              <option value="cpp">C++</option>
+              <option value="rust">Rust</option>
+              <option value="go">Go</option>
+              <option value="sql">SQL</option>
+              <option value="html">HTML/CSS</option>
+            </select>
+          </div>
+          <div class="rg-field">
+            <label>Review Focus</label>
+            <select id="reviewFocus">
+              <option value="general">General (all aspects)</option>
+              <option value="security">Security vulnerabilities</option>
+              <option value="performance">Performance optimization</option>
+              <option value="bugs">Bug detection</option>
+              <option value="readability">Readability & style</option>
+            </select>
+          </div>
+          <div class="rg-field">
+            <label>Paste your code <span class="req">*</span></label>
+            <textarea id="codeInput" rows="14" placeholder="Paste your code here..." style="font-family:monospace;font-size:.82rem"></textarea>
+          </div>
+          <button class="morph-btn rg-gen-btn" onclick="reviewCode()" id="reviewBtn">
+            <span class="btn-text"><i class="fas fa-search-plus"></i> Review Code</span>
+            <span class="btn-loading hidden"><i class="fas fa-spinner fa-spin"></i> Analyzing...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="rg-output-wrap">
+      <div class="card rg-output-card">
+        <div class="card-header"><i class="fas fa-clipboard-check"></i> AI Review</div>
+        <div class="rg-output-body" id="reviewOutput">
+          <div class="rg-placeholder">
+            <i class="fas fa-search-plus fa-3x" style="opacity:.2;margin-bottom:1rem"></i>
+            <p>Paste your code and click <strong>Review Code</strong></p>
+            <p style="font-size:.8rem;margin-top:.5rem">Get feedback on bugs, security, performance & style</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.cr-wrap { max-width:1200px; margin:0 auto; }
+.rg-header { text-align:center; margin-bottom:2rem; }
+.rg-title { font-family:'Orbitron',sans-serif; font-size:clamp(1.8rem,4vw,2.8rem); font-weight:900; letter-spacing:-1px; margin:.5rem 0; }
+.rg-sub { color:var(--text-muted); font-size:.95rem; }
+.rg-grid { display:grid; grid-template-columns:1fr 1.2fr; gap:1.5rem; }
+@media(max-width:900px){.rg-grid{grid-template-columns:1fr}}
+.rg-field { margin-bottom:1rem; }
+.rg-field label { display:block; font-size:.83rem; color:var(--text-muted); margin-bottom:.35rem; font-weight:500; }
+.req { color:#f472b6; }
+.rg-field select, .rg-field textarea, .rg-field input {
+  width:100%; padding:.6rem .85rem;
+  background:var(--bg-2,rgba(13,13,26,.9)); border:1px solid var(--border,rgba(124,92,252,.15));
+  border-radius:10px; color:var(--text,#f0f0ff); font-size:.9rem; font-family:inherit;
+  box-sizing:border-box; transition:border-color .2s;
+}
+.rg-field select:focus,.rg-field textarea:focus { outline:none; border-color:#7c5cfc; }
+.rg-field textarea { resize:vertical; }
+.rg-gen-btn { width:100%; justify-content:center; margin-top:.5rem; padding:.85rem; font-size:1rem; }
+.rg-output-card { height:100%; display:flex; flex-direction:column; }
+.rg-output-body { flex:1; padding:1.2rem; overflow-y:auto; min-height:400px; background:var(--bg-2,rgba(13,13,26,.9)); }
+.rg-placeholder { text-align:center; padding:3rem 1rem; color:var(--text-muted); }
+.review-content { font-size:.88rem; line-height:1.7; color:var(--text); white-space:pre-wrap; }
+</style>
+{% endblock %}
+{% block scripts %}
+<script>
+async function reviewCode() {
+  const code = document.getElementById('codeInput').value.trim();
+  if (!code) { showToast('Please paste some code first!', true); return; }
+  const btn = document.getElementById('reviewBtn');
+  btn.querySelector('.btn-text').classList.add('hidden');
+  btn.querySelector('.btn-loading').classList.remove('hidden');
+  btn.disabled = true;
+  document.getElementById('reviewOutput').innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-muted)"><i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:1rem;color:#7c5cfc"></i><p>AI is analyzing your code...</p></div>';
+  try {
+    const r = await fetch('/api/review-code', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        code, language: document.getElementById('codeLanguage').value,
+        focus: document.getElementById('reviewFocus').value
+      })
+    });
+    const d = await r.json();
+    if (d.success) {
+      document.getElementById('reviewOutput').innerHTML = '<pre class="review-content">' + escHtml(d.review) + '</pre>';
+      showToast('Code reviewed successfully!');
+    } else {
+      document.getElementById('reviewOutput').innerHTML = '<div style="padding:1rem;color:#f472b6">' + d.error + '</div>';
+    }
+  } catch(e) {
+    document.getElementById('reviewOutput').innerHTML = '<div style="padding:1rem;color:#f472b6">Network error.</div>';
+  }
+  btn.querySelector('.btn-text').classList.remove('hidden');
+  btn.querySelector('.btn-loading').classList.add('hidden');
+  btn.disabled = false;
+}
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+{% endblock %}

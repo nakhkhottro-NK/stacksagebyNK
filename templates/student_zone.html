@@ -24,6 +24,27 @@
   </div>
 </div>
 
+<!-- XP & Level Bar -->
+<div class="xp-section glassmorphism">
+  <div class="xp-left">
+    <div class="xp-level-badge">{{ xp_data.level_icon }} {{ xp_data.level_name }}</div>
+    <div class="xp-streak">🔥 {{ xp_data.streak }} day streak</div>
+  </div>
+  <div class="xp-center">
+    <div class="xp-bar-wrap">
+      <div class="xp-bar-fill" style="width:{{ xp_data.level_pct }}%"></div>
+    </div>
+    <div class="xp-bar-label">
+      <span>{{ xp_data.xp }} XP</span>
+      {% if xp_data.next_xp %}<span>Next level: {{ xp_data.next_xp }} XP</span>{% endif %}
+    </div>
+  </div>
+  <div class="xp-right">
+    <div class="xp-total">{{ xp_data.xp }}<span>XP</span></div>
+    <div class="xp-lvl">Level {{ xp_data.level_num }}</div>
+  </div>
+</div>
+
 <!-- Public stats bar -->
 <div class="stats-bar glassmorphism">
   <div class="stat-item">
@@ -42,11 +63,55 @@
   </div>
 </div>
 
+<!-- AI Tools quick links -->
+<div class="ai-tools-row">
+  <a href="/code-reviewer" class="ai-tool-card">
+    <i class="fas fa-code"></i>
+    <div>
+      <div class="tool-name">AI Code Reviewer</div>
+      <div class="tool-desc">Paste code → get instant AI feedback</div>
+    </div>
+    <i class="fas fa-arrow-right tool-arrow"></i>
+  </a>
+  <a href="/github-analyzer" class="ai-tool-card">
+    <i class="fab fa-github"></i>
+    <div>
+      <div class="tool-name">GitHub Analyzer</div>
+      <div class="tool-desc">Analyze any GitHub user profile</div>
+    </div>
+    <i class="fas fa-arrow-right tool-arrow"></i>
+  </a>
+  <a href="/readme-generator" class="ai-tool-card">
+    <i class="fas fa-file-code"></i>
+    <div>
+      <div class="tool-name">README Generator</div>
+      <div class="tool-desc">Generate professional README.md</div>
+    </div>
+    <i class="fas fa-arrow-right tool-arrow"></i>
+  </a>
+</div>
+
 <!-- Tab navigation -->
 <div class="sz-tabs">
   <button class="sz-tab active" onclick="switchTab('tests', this)"><i class="fas fa-clipboard-check"></i> Skill Tests</button>
   <button class="sz-tab" onclick="switchTab('projects', this)"><i class="fas fa-folder-open"></i> My Projects</button>
   <button class="sz-tab" onclick="switchTab('chat', this)"><i class="fas fa-robot"></i> AI Tutor</button>
+  <button class="sz-tab" onclick="switchTab('todo', this)"><i class="fas fa-check-square"></i> To-Do</button>
+  <button class="sz-tab" onclick="switchTab('habits', this)"><i class="fas fa-fire"></i> Habits</button>
+  <button class="sz-tab" onclick="switchTab('challenge', this)"><i class="fas fa-bolt"></i> Challenge</button>
+  <button class="sz-tab" onclick="switchTab('pomodoro', this)"><i class="fas fa-clock"></i> Pomodoro</button>
+</div>
+
+<!-- README Generator quick link -->
+<div style="margin-bottom:1.5rem">
+  <a href="/readme-generator" class="readme-tool-link">
+    <i class="fas fa-file-code"></i>
+    <div>
+      <div style="font-weight:600;font-size:.9rem">README Generator</div>
+      <div style="font-size:.78rem;color:var(--text-muted)">Generate a professional README.md for your projects with AI</div>
+    </div>
+    <i class="fas fa-arrow-right" style="margin-left:auto;color:var(--text-muted)"></i>
+  </a>
 </div>
 
 <!-- ── TAB: SKILL TESTS ─────────────────────────────────────── -->
@@ -74,6 +139,11 @@
         {% if t.badge %}<span class="badge-pill badge-{{ t.badge }}">{{ t.badge|capitalize }}</span>{% endif %}
       </div>
       <div class="test-date">{{ t.taken_at[:10] }}</div>
+      {% if t.pct >= 70 %}
+      <a href="{{ url_for('generate_certificate', test_id=t.id) }}" class="cert-btn" target="_blank">
+        <i class="fas fa-certificate"></i> Get Certificate
+      </a>
+      {% endif %}
     </div>
     {% endfor %}
   </div>
@@ -151,6 +221,85 @@
   <div class="chat-input-row">
     <input type="text" id="chatInput" placeholder="Ask your AI tutor anything…" onkeydown="if(event.key==='Enter') sendChat()"/>
     <button class="btn-primary" onclick="sendChat()" id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+  </div>
+</div>
+
+
+
+
+<!-- ── TAB: TO-DO ───────────────────────────────────────────── -->
+<div class="tab-panel hidden" id="tab-todo">
+  <div class="panel-header">
+    <h2>📋 Daily To-Do List</h2>
+    <span id="todoDate" style="font-size:.8rem;color:var(--text-muted)"></span>
+  </div>
+  <div class="todo-input-row">
+    <input type="text" id="todoInput" placeholder="Add a task… e.g. Read Python docs" onkeydown="if(event.key==='Enter') addTodo()"/>
+    <button class="btn-primary btn-sm" onclick="addTodo()"><i class="fas fa-plus"></i> Add</button>
+  </div>
+  <div id="todoList" class="todo-list"></div>
+  <div class="todo-progress" id="todoProgress"></div>
+</div>
+
+<!-- ── TAB: HABITS ──────────────────────────────────────────── -->
+<div class="tab-panel hidden" id="tab-habits">
+  <div class="panel-header">
+    <h2>🔥 Habit Tracker</h2>
+    <button class="btn-primary btn-sm" onclick="openHabitModal()"><i class="fas fa-plus"></i> Add habit</button>
+  </div>
+  <div id="habitList" class="habit-list"></div>
+  <!-- Add habit modal -->
+  <div class="modal-overlay hidden" id="habitModal">
+    <div class="modal glassmorphism">
+      <div class="modal-header"><h3>New habit</h3><button class="modal-close" onclick="closeModal('habitModal')">✕</button></div>
+      <div class="form-group"><label>Habit name</label><input type="text" id="habitName" placeholder="e.g. Code for 1 hour" maxlength="80"/></div>
+      <div class="form-group"><label>Emoji</label>
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.3rem">
+          {% for em in ['💻','📚','🏃','💧','🧘','✍️','🎯','⚡','🔥','✅'] %}
+          <button onclick="selectEmoji('{{ em }}')" class="emoji-pick" data-e="{{ em }}">{{ em }}</button>
+          {% endfor %}
+        </div>
+        <input type="hidden" id="habitEmoji" value="✅"/>
+      </div>
+      <button class="btn-primary btn-full" onclick="saveHabit()">Save habit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB: DAILY CHALLENGE ──────────────────────────────────── -->
+<div class="tab-panel hidden" id="tab-challenge">
+  <div class="panel-header"><h2>⚡ Daily Coding Challenge</h2></div>
+  <div id="challengeBox" class="challenge-box">
+    <div style="text-align:center;padding:2rem;color:var(--text-muted)"><i class="fas fa-spinner fa-spin fa-2x"></i><p style="margin-top:.8rem">Loading today's challenge...</p></div>
+  </div>
+</div>
+
+<!-- ── TAB: POMODORO ─────────────────────────────────────────── -->
+<div class="tab-panel hidden" id="tab-pomodoro">
+  <div class="panel-header"><h2>🍅 Pomodoro Timer</h2></div>
+  <div class="pomodoro-wrap glassmorphism">
+    <div class="pom-mode-row">
+      <button class="pom-mode active" onclick="setPomMode(25,'Focus',this)">Focus 25m</button>
+      <button class="pom-mode" onclick="setPomMode(5,'Short Break',this)">Break 5m</button>
+      <button class="pom-mode" onclick="setPomMode(15,'Long Break',this)">Long Break 15m</button>
+    </div>
+    <div class="pom-ring">
+      <svg viewBox="0 0 120 120" width="200" height="200">
+        <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="8"/>
+        <circle id="pomCircle" cx="60" cy="60" r="54" fill="none" stroke="url(#pomGrad)" stroke-width="8"
+          stroke-dasharray="339.3" stroke-dashoffset="0" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+        <defs><linearGradient id="pomGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#7c5cfc"/><stop offset="100%" stop-color="#f472b6"/>
+        </linearGradient></defs>
+      </svg>
+      <div class="pom-time" id="pomTime">25:00</div>
+      <div class="pom-label" id="pomLabel">Focus</div>
+    </div>
+    <div class="pom-btns">
+      <button class="btn-primary" onclick="togglePom()" id="pomBtn"><i class="fas fa-play"></i> Start</button>
+      <button class="btn-outline" onclick="resetPom()"><i class="fas fa-redo"></i> Reset</button>
+    </div>
+    <div class="pom-sessions">Sessions today: <strong id="pomSessions">0</strong> 🍅 &nbsp;|&nbsp; XP earned: <strong id="pomXP">0</strong></div>
   </div>
 </div>
 
@@ -334,6 +483,100 @@
 .btn-sm { padding:.4rem .9rem; font-size:.82rem; }
 .btn-outline { background:none; border:1px solid rgba(255,255,255,.18); color:inherit; padding:.4rem .9rem; border-radius:.5rem; cursor:pointer; font-size:.82rem; transition:.15s; text-decoration:none; display:inline-flex; align-items:center; gap:.4rem; }
 .btn-outline:hover { border-color:#7c9eff; color:#7c9eff; }
+
+.cert-btn {
+  display:inline-flex; align-items:center; gap:.4rem;
+  background:linear-gradient(135deg,rgba(246,201,14,.15),rgba(246,201,14,.05));
+  border:1px solid rgba(246,201,14,.3); color:#f6c90e;
+  padding:.35rem .8rem; border-radius:.5rem;
+  font-size:.72rem; font-weight:600; text-decoration:none;
+  margin-top:.5rem; transition:all .2s;
+}
+.cert-btn:hover { background:rgba(246,201,14,.25); }
+.readme-tool-link {
+  display:flex; align-items:center; gap:1rem;
+  background:linear-gradient(135deg,rgba(124,92,252,.1),rgba(192,38,211,.05));
+  border:1px solid rgba(124,92,252,.25); border-radius:1rem;
+  padding:1rem 1.2rem; text-decoration:none; color:var(--text);
+  transition:all .2s;
+}
+.readme-tool-link:hover { border-color:rgba(124,92,252,.5); transform:translateY(-2px); }
+.readme-tool-link i:first-child { font-size:1.5rem; color:#7c5cfc; flex-shrink:0; }
+
+
+/* ── XP Section ── */
+.xp-section { display:flex; align-items:center; gap:1.2rem; padding:.9rem 1.4rem; border-radius:1rem; margin-bottom:1.2rem; flex-wrap:wrap; }
+.xp-left { display:flex; flex-direction:column; gap:.3rem; flex-shrink:0; }
+.xp-level-badge { font-size:.85rem; font-weight:700; background:linear-gradient(135deg,rgba(124,92,252,.2),rgba(192,38,211,.1)); border:1px solid rgba(124,92,252,.3); padding:.3rem .8rem; border-radius:20px; color:#b794f4; }
+.xp-streak { font-size:.78rem; color:var(--text-muted); }
+.xp-center { flex:1; min-width:160px; }
+.xp-bar-wrap { height:8px; background:rgba(255,255,255,.08); border-radius:4px; overflow:hidden; margin-bottom:.35rem; }
+.xp-bar-fill { height:100%; background:linear-gradient(90deg,#7c5cfc,#c026d3,#f472b6); border-radius:4px; transition:width .8s ease; }
+.xp-bar-label { display:flex; justify-content:space-between; font-size:.72rem; color:var(--text-muted); }
+.xp-right { text-align:right; flex-shrink:0; }
+.xp-total { font-family:'Orbitron',sans-serif; font-size:1.4rem; font-weight:700; background:linear-gradient(135deg,#7c5cfc,#c026d3); -webkit-background-clip:text; background-clip:text; color:transparent; line-height:1; }
+.xp-total span { font-size:.7rem; margin-left:3px; }
+.xp-lvl { font-size:.72rem; color:var(--text-muted); }
+
+/* ── AI Tools Row ── */
+.ai-tools-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:.7rem; margin-bottom:1.4rem; }
+.ai-tool-card { display:flex; align-items:center; gap:.8rem; background:var(--surface,rgba(13,13,26,.8)); border:1px solid rgba(124,92,252,.2); border-radius:12px; padding:.85rem 1rem; text-decoration:none; color:var(--text,#f0f0ff); transition:all .2s; }
+.ai-tool-card:hover { border-color:rgba(124,92,252,.5); transform:translateY(-2px); background:rgba(124,92,252,.1); }
+.ai-tool-card > i:first-child { font-size:1.3rem; color:#7c5cfc; flex-shrink:0; }
+.tool-name { font-size:.85rem; font-weight:600; }
+.tool-desc { font-size:.72rem; color:var(--text-muted); }
+.tool-arrow { margin-left:auto; font-size:.8rem; color:var(--text-muted); flex-shrink:0; }
+
+
+/* ── Todo ── */
+.todo-input-row { display:flex; gap:.6rem; margin-bottom:1rem; }
+.todo-input-row input { flex:1; padding:.6rem .85rem; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:.7rem; color:inherit; font-size:.9rem; }
+.todo-input-row input:focus { outline:none; border-color:#7c5cfc; }
+.todo-list { display:flex; flex-direction:column; gap:.4rem; }
+.todo-item { display:flex; align-items:center; gap:.7rem; padding:.7rem 1rem; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:.7rem; }
+.todo-item.done .todo-text { text-decoration:line-through; opacity:.5; }
+.todo-check { width:20px; height:20px; border-radius:6px; border:2px solid rgba(124,92,252,.5); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:.2s; }
+.todo-check.checked { background:linear-gradient(135deg,#7c5cfc,#c026d3); border-color:transparent; }
+.todo-text { flex:1; font-size:.88rem; }
+.todo-del { background:none; border:none; cursor:pointer; color:rgba(255,255,255,.3); padding:4px; border-radius:4px; }
+.todo-del:hover { color:#ff6b6b; }
+.todo-progress { margin-top:.8rem; font-size:.8rem; color:var(--text-muted); }
+
+/* ── Habits ── */
+.habit-list { display:flex; flex-direction:column; gap:.6rem; }
+.habit-item { display:flex; align-items:center; gap:.8rem; padding:.8rem 1rem; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07); border-radius:.8rem; }
+.habit-emoji { font-size:1.3rem; flex-shrink:0; }
+.habit-name { flex:1; font-size:.9rem; font-weight:500; }
+.habit-check { width:32px; height:32px; border-radius:50%; border:2px solid rgba(124,92,252,.4); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:.2s; font-size:.9rem; }
+.habit-check.done { background:linear-gradient(135deg,#7c5cfc,#c026d3); border-color:transparent; }
+.habit-del { background:none; border:none; cursor:pointer; color:rgba(255,255,255,.25); padding:4px; border-radius:4px; }
+.habit-del:hover { color:#ff6b6b; }
+.emoji-pick { background:rgba(255,255,255,.05); border:2px solid transparent; border-radius:8px; padding:4px 8px; font-size:1.2rem; cursor:pointer; transition:.15s; }
+.emoji-pick.selected { border-color:#7c5cfc; background:rgba(124,92,252,.15); }
+
+/* ── Challenge ── */
+.challenge-box { background:rgba(255,255,255,.04); border:1px solid rgba(124,92,252,.2); border-radius:1rem; padding:1.5rem; }
+.challenge-topic { font-size:.75rem; font-weight:700; letter-spacing:1px; color:#7c5cfc; text-transform:uppercase; margin-bottom:.6rem; }
+.challenge-q { font-size:1.1rem; font-weight:600; margin-bottom:1.2rem; line-height:1.5; }
+.challenge-input-row { display:flex; gap:.6rem; margin-bottom:.8rem; }
+.challenge-input-row input { flex:1; padding:.65rem .9rem; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:.7rem; color:inherit; font-size:.9rem; }
+.challenge-input-row input:focus { outline:none; border-color:#7c5cfc; }
+.challenge-result { padding:.8rem 1rem; border-radius:.7rem; font-size:.9rem; font-weight:600; }
+.challenge-result.correct { background:rgba(72,213,150,.15); color:#48d596; border:1px solid rgba(72,213,150,.3); }
+.challenge-result.wrong { background:rgba(255,107,107,.1); color:#ff6b6b; border:1px solid rgba(255,107,107,.2); }
+.challenge-solved { text-align:center; padding:1rem; color:#48d596; font-weight:600; }
+
+/* ── Pomodoro ── */
+.pomodoro-wrap { padding:1.5rem; border-radius:1.2rem; text-align:center; }
+.pom-mode-row { display:flex; gap:.5rem; justify-content:center; margin-bottom:1.5rem; flex-wrap:wrap; }
+.pom-mode { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); color:var(--text-muted); padding:.4rem 1rem; border-radius:20px; cursor:pointer; font-size:.82rem; transition:.2s; }
+.pom-mode.active { background:linear-gradient(135deg,rgba(124,92,252,.25),rgba(192,38,211,.15)); border-color:rgba(124,92,252,.5); color:#b794f4; }
+.pom-ring { position:relative; display:inline-block; margin:.5rem 0; }
+.pom-time { position:absolute; top:50%; left:50%; transform:translate(-50%,-60%); font-family:'Orbitron',sans-serif; font-size:2rem; font-weight:700; color:var(--text); }
+.pom-label { position:absolute; bottom:28%; left:50%; transform:translateX(-50%); font-size:.75rem; color:var(--text-muted); white-space:nowrap; }
+.pom-btns { display:flex; gap:.6rem; justify-content:center; margin:.8rem 0; }
+.pom-sessions { font-size:.82rem; color:var(--text-muted); margin-top:.5rem; }
+
 </style>
 {% endblock %}
 
@@ -351,6 +594,202 @@ function switchTab(name, btn) {
 /* ── Modals ── */
 function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+/* ── TODAY DATE ── */
+const TODAY = new Date().toISOString().slice(0,10);
+const todayEl = document.getElementById('todoDate');
+if(todayEl) todayEl.textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+
+/* ── TODO ── */
+async function loadTodos(){
+  const r=await fetch('/api/todos?date='+TODAY);
+  const d=await r.json();
+  const list=document.getElementById('todoList');
+  if(!d.todos||!d.todos.length){list.innerHTML='<div style="text-align:center;padding:1.5rem;color:var(--text-muted);font-size:.85rem">No tasks yet. Add your first task!</div>';updateTodoProgress([]);return;}
+  list.innerHTML=d.todos.map(t=>`
+    <div class="todo-item ${t.done?'done':''}" id="todo-${t.id}">
+      <div class="todo-check ${t.done?'checked':''}" onclick="toggleTodo(${t.id})">
+        ${t.done?'<i class="fas fa-check" style="font-size:.65rem;color:#fff"></i>':''}
+      </div>
+      <span class="todo-text">${escHtml(t.text)}</span>
+      <button class="todo-del" onclick="deleteTodo(${t.id})"><i class="fas fa-times"></i></button>
+    </div>`).join('');
+  updateTodoProgress(d.todos);
+}
+
+function updateTodoProgress(todos){
+  const done=todos.filter(t=>t.done).length;
+  const total=todos.length;
+  const el=document.getElementById('todoProgress');
+  if(!el) return;
+  el.textContent=total?`${done}/${total} completed${done===total&&total>0?' 🎉':''}`:'' ;
+}
+
+async function addTodo(){
+  const inp=document.getElementById('todoInput');
+  const text=inp.value.trim();
+  if(!text) return;
+  inp.value='';
+  await fetch('/api/todos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,date:TODAY})});
+  loadTodos();
+}
+
+async function toggleTodo(id){
+  await fetch('/api/todos/'+id+'/toggle',{method:'POST'});
+  loadTodos();
+}
+
+async function deleteTodo(id){
+  await fetch('/api/todos/'+id,{method:'DELETE'});
+  loadTodos();
+}
+
+/* ── HABITS ── */
+let selectedEmoji='✅';
+function openHabitModal(){selectedEmoji='✅';openModal('habitModal');}
+function selectEmoji(e){
+  selectedEmoji=e;
+  document.getElementById('habitEmoji').value=e;
+  document.querySelectorAll('.emoji-pick').forEach(b=>b.classList.toggle('selected',b.dataset.e===e));
+}
+
+async function loadHabits(){
+  const r=await fetch('/api/habits?date='+TODAY);
+  const d=await r.json();
+  const list=document.getElementById('habitList');
+  if(!d.habits||!d.habits.length){list.innerHTML='<div style="text-align:center;padding:1.5rem;color:var(--text-muted);font-size:.85rem">No habits yet. Add your first habit!</div>';return;}
+  const done=new Set(d.logs||[]);
+  list.innerHTML=d.habits.map(h=>`
+    <div class="habit-item" id="habit-${h.id}">
+      <div class="habit-emoji">${h.emoji}</div>
+      <div class="habit-name">${escHtml(h.name)}</div>
+      <div class="habit-check ${done.has(h.id)?'done':''}" onclick="toggleHabit(${h.id})">
+        ${done.has(h.id)?'✓':''}
+      </div>
+      <button class="habit-del" onclick="deleteHabit(${h.id})"><i class="fas fa-times"></i></button>
+    </div>`).join('');
+}
+
+async function saveHabit(){
+  const name=document.getElementById('habitName').value.trim();
+  if(!name) return;
+  await fetch('/api/habits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,emoji:selectedEmoji})});
+  document.getElementById('habitName').value='';
+  closeModal('habitModal');
+  loadHabits();
+}
+
+async function toggleHabit(id){
+  await fetch('/api/habits/'+id+'/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date:TODAY})});
+  loadHabits();
+}
+
+async function deleteHabit(id){
+  if(!confirm('Delete this habit?')) return;
+  await fetch('/api/habits/'+id,{method:'DELETE'});
+  loadHabits();
+}
+
+/* ── CHALLENGE ── */
+async function loadChallenge(){
+  const box=document.getElementById('challengeBox');
+  if(!box) return;
+  const r=await fetch('/api/daily-challenge');
+  const d=await r.json();
+  const ch=d.challenge;
+  if(ch.solved){
+    box.innerHTML=`<div class="challenge-topic">${ch.topic||'Today'}</div><p class="challenge-q">${escHtml(ch.question)}</p><div class="challenge-solved">✅ You solved today's challenge! Come back tomorrow.</div>`;
+    return;
+  }
+  box.innerHTML=`
+    <div class="challenge-topic">📅 ${d.date} · ${ch.topic||'Coding'}</div>
+    <p class="challenge-q">${escHtml(ch.question)}</p>
+    <div class="challenge-input-row">
+      <input type="text" id="challengeAns" placeholder="Your answer…" onkeydown="if(event.key==='Enter') submitChallenge()"/>
+      <button class="btn-primary btn-sm" onclick="submitChallenge()">Submit</button>
+    </div>
+    <div id="challengeResult"></div>`;
+}
+
+async function submitChallenge(){
+  const ans=document.getElementById('challengeAns').value.trim();
+  if(!ans) return;
+  const r=await fetch('/api/daily-challenge/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({answer:ans})});
+  const d=await r.json();
+  const res=document.getElementById('challengeResult');
+  if(d.correct){
+    res.innerHTML='<div class="challenge-result correct">🎉 Correct! +20 XP earned!</div>';
+    setTimeout(loadChallenge,1500);
+  } else {
+    res.innerHTML='<div class="challenge-result wrong">❌ Not quite. Try again!</div>';
+  }
+}
+
+/* ── POMODORO ── */
+let pomDur=25*60, pomLeft=25*60, pomRunning=false, pomTimer=null, pomSess=0, pomXPTotal=0, pomMode='Focus';
+const CIRC=339.3;
+
+function setPomMode(mins,label,btn){
+  clearInterval(pomTimer); pomRunning=false;
+  document.getElementById('pomBtn').innerHTML='<i class="fas fa-play"></i> Start';
+  pomDur=mins*60; pomLeft=pomDur; pomMode=label;
+  updatePomDisplay();
+  document.querySelectorAll('.pom-mode').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function updatePomDisplay(){
+  const m=Math.floor(pomLeft/60), s=pomLeft%60;
+  document.getElementById('pomTime').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  document.getElementById('pomLabel').textContent=pomMode;
+  const offset=CIRC*(1-pomLeft/pomDur);
+  document.getElementById('pomCircle').style.strokeDashoffset=offset;
+}
+
+function togglePom(){
+  if(pomRunning){
+    clearInterval(pomTimer); pomRunning=false;
+    document.getElementById('pomBtn').innerHTML='<i class="fas fa-play"></i> Resume';
+  } else {
+    pomRunning=true;
+    document.getElementById('pomBtn').innerHTML='<i class="fas fa-pause"></i> Pause';
+    pomTimer=setInterval(async()=>{
+      pomLeft--;
+      updatePomDisplay();
+      if(pomLeft<=0){
+        clearInterval(pomTimer); pomRunning=false;
+        document.getElementById('pomBtn').innerHTML='<i class="fas fa-play"></i> Start';
+        if(pomMode==='Focus'){
+          pomSess++;
+          document.getElementById('pomSessions').textContent=pomSess;
+          const xr=await fetch('/api/pomodoro/complete',{method:'POST'});
+          const xd=await xr.json();
+          pomXPTotal+=20;
+          document.getElementById('pomXP').textContent=pomXPTotal;
+          showToast('🍅 Pomodoro complete! +20 XP');
+        }
+        pomLeft=pomDur; updatePomDisplay();
+      }
+    },1000);
+  }
+}
+
+function resetPom(){
+  clearInterval(pomTimer); pomRunning=false;
+  pomLeft=pomDur; updatePomDisplay();
+  document.getElementById('pomBtn').innerHTML='<i class="fas fa-play"></i> Start';
+}
+
+/* Load on tab switch */
+const origSwitch=window.switchTab;
+window.switchTab=function(name,btn){
+  origSwitch(name,btn);
+  if(name==='todo') loadTodos();
+  if(name==='habits') loadHabits();
+  if(name==='challenge') loadChallenge();
+  if(name==='pomodoro') updatePomDisplay();
+};
+
 window.addEventListener('click', e => {
   ['profileModal','testModal','projectModal'].forEach(id => {
     const el = document.getElementById(id);

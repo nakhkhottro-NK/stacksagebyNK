@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}JSON Formatter{% endblock %}
+{% block content %}
+<div style="max-width:1100px;margin:0 auto">
+  <div class="rg-header" style="text-align:center;margin-bottom:2rem">
+    <div class="hero-eyebrow"><div class="eyebrow-line"></div><div class="eyebrow-text">Developer Tool</div><div class="eyebrow-line r"></div></div>
+    <h1 class="rg-title">JSON <span class="t-morph">Formatter</span></h1>
+    <p class="rg-sub">Paste messy JSON → instantly format, validate and highlight errors</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem">
+    <div class="card">
+      <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+        <span><i class="fas fa-code"></i> Input JSON</span>
+        <div style="display:flex;gap:.4rem">
+          <button class="action-btn" onclick="pasteExample()"><i class="fas fa-paste"></i> Example</button>
+          <button class="action-btn" onclick="clearAll()"><i class="fas fa-trash"></i> Clear</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:.8rem">
+        <textarea id="jsonInput" rows="20" style="width:100%;background:var(--bg-2,rgba(13,13,26,.9));border:1px solid var(--border,rgba(124,92,252,.15));border-radius:10px;color:var(--text,#f0f0ff);font-family:monospace;font-size:.82rem;padding:.8rem;resize:vertical;box-sizing:border-box" placeholder='Paste your JSON here...'></textarea>
+        <div style="display:flex;gap:.6rem;margin-top:.7rem">
+          <button class="morph-btn" style="flex:1;justify-content:center" onclick="formatJSON()"><i class="fas fa-magic"></i> Format</button>
+          <button class="action-btn" onclick="minifyJSON()"><i class="fas fa-compress"></i> Minify</button>
+          <button class="action-btn" onclick="validateJSON()"><i class="fas fa-check"></i> Validate</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+        <span><i class="fas fa-clipboard-check"></i> Output</span>
+        <div style="display:flex;gap:.4rem">
+          <span id="jsonStatus" style="font-size:.75rem;padding:2px 8px;border-radius:20px"></span>
+          <button class="action-btn" onclick="copyOutput()" id="copyOutBtn" style="display:none"><i class="fas fa-copy"></i> Copy</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:.8rem">
+        <pre id="jsonOutput" style="background:var(--bg-2,rgba(13,13,26,.9));border:1px solid var(--border,rgba(124,92,252,.15));border-radius:10px;padding:.8rem;min-height:300px;font-size:.82rem;overflow:auto;white-space:pre-wrap;word-break:break-all;color:var(--text,#f0f0ff);margin:0">Output will appear here...</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div style="display:flex;gap:.8rem;margin-top:1rem;flex-wrap:wrap">
+    <div style="background:var(--surface,rgba(13,13,26,.8));border:1px solid var(--border,rgba(124,92,252,.15));border-radius:10px;padding:.6rem 1.1rem;font-size:.8rem;color:var(--text-muted)">Keys: <strong id="statKeys" style="color:#b794f4">—</strong></div>
+    <div style="background:var(--surface,rgba(13,13,26,.8));border:1px solid var(--border,rgba(124,92,252,.15));border-radius:10px;padding:.6rem 1.1rem;font-size:.8rem;color:var(--text-muted)">Size: <strong id="statSize" style="color:#b794f4">—</strong></div>
+    <div style="background:var(--surface,rgba(13,13,26,.8));border:1px solid var(--border,rgba(124,92,252,.15));border-radius:10px;padding:.6rem 1.1rem;font-size:.8rem;color:var(--text-muted)">Type: <strong id="statType" style="color:#b794f4">—</strong></div>
+    <div style="background:var(--surface,rgba(13,13,26,.8));border:1px solid var(--border,rgba(124,92,252,.15));border-radius:10px;padding:.6rem 1.1rem;font-size:.8rem;color:var(--text-muted)">Depth: <strong id="statDepth" style="color:#b794f4">—</strong></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function formatJSON(){
+  try{
+    const input=document.getElementById('jsonInput').value.trim();
+    if(!input){showToast('Paste some JSON first!',true);return;}
+    const parsed=JSON.parse(input);
+    const formatted=JSON.stringify(parsed,null,2);
+    const highlighted=syntaxHighlight(formatted);
+    document.getElementById('jsonOutput').innerHTML=highlighted;
+    setStatus('✅ Valid JSON','#48d596');
+    document.getElementById('copyOutBtn').style.display='';
+    updateStats(parsed,formatted);
+    showToast('JSON formatted!');
+  }catch(e){
+    document.getElementById('jsonOutput').textContent='Error: '+e.message;
+    setStatus('❌ Invalid JSON','#ff6b6b');
+    document.getElementById('copyOutBtn').style.display='none';
+  }
+}
+
+function minifyJSON(){
+  try{
+    const parsed=JSON.parse(document.getElementById('jsonInput').value);
+    const min=JSON.stringify(parsed);
+    document.getElementById('jsonOutput').textContent=min;
+    setStatus('✅ Minified','#48d596');
+    document.getElementById('copyOutBtn').style.display='';
+    showToast('JSON minified!');
+  }catch(e){
+    document.getElementById('jsonOutput').textContent='Error: '+e.message;
+    setStatus('❌ Invalid JSON','#ff6b6b');
+  }
+}
+
+function validateJSON(){
+  try{
+    JSON.parse(document.getElementById('jsonInput').value);
+    setStatus('✅ Valid JSON','#48d596');
+    showToast('Valid JSON!');
+  }catch(e){
+    setStatus('❌ '+e.message,'#ff6b6b');
+    showToast('Invalid JSON: '+e.message,true);
+  }
+}
+
+function setStatus(msg,col){
+  const el=document.getElementById('jsonStatus');
+  el.textContent=msg;
+  el.style.background=col+'20';
+  el.style.color=col;
+  el.style.border='1px solid '+col+'40';
+}
+
+function updateStats(parsed,formatted){
+  document.getElementById('statKeys').textContent=Array.isArray(parsed)?parsed.length+' items':Object.keys(parsed).length;
+  document.getElementById('statSize').textContent=new Blob([formatted]).size+' bytes';
+  document.getElementById('statType').textContent=Array.isArray(parsed)?'Array':'Object';
+  document.getElementById('statDepth').textContent=getDepth(parsed);
+}
+
+function getDepth(obj,d=0){
+  if(typeof obj!=='object'||obj===null) return d;
+  return Math.max(...Object.values(obj).map(v=>getDepth(v,d+1)));
+}
+
+function syntaxHighlight(json){
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,function(match){
+    let cls='color:#fb923c';
+    if(/^"/.test(match)){if(/:$/.test(match)){cls='color:#b794f4';}else{cls='color:#48d596';}}
+    else if(/true|false/.test(match)){cls='color:#7c9eff';}
+    else if(/null/.test(match)){cls='color:#ff6b6b';}
+    return '<span style="'+cls+'">'+match+'</span>';
+  });
+}
+
+function copyOutput(){
+  const text=document.getElementById('jsonOutput').textContent;
+  navigator.clipboard.writeText(text).then(()=>showToast('Copied!'));
+}
+
+function clearAll(){
+  document.getElementById('jsonInput').value='';
+  document.getElementById('jsonOutput').textContent='Output will appear here...';
+  document.getElementById('jsonStatus').textContent='';
+  document.getElementById('copyOutBtn').style.display='none';
+  ['statKeys','statSize','statType','statDepth'].forEach(id=>document.getElementById(id).textContent='—');
+}
+
+function pasteExample(){
+  document.getElementById('jsonInput').value=JSON.stringify({name:"StackSage",version:"2.0",features:["AI Analysis","GitHub Trends","Student Zone"],stats:{users:42,searches:1337,projects:89},active:true},null,2);
+  formatJSON();
+}
+
+document.getElementById('jsonInput').addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter') formatJSON();
+});
+</script>
+{% endblock %}

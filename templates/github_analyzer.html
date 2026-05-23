@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}GitHub User Analyzer{% endblock %}
+{% block content %}
+<div class="gh-wrap">
+  <div class="rg-header">
+    <div class="hero-eyebrow">
+      <div class="eyebrow-line"></div>
+      <div class="eyebrow-text">AI-Powered Tool</div>
+      <div class="eyebrow-line r"></div>
+    </div>
+    <h1 class="rg-title">GitHub <span class="t-morph">Analyzer</span></h1>
+    <p class="rg-sub">Enter any GitHub username — get full profile analysis with AI insights</p>
+  </div>
+
+  <div class="gh-search-box">
+    <div class="search-area" style="max-width:500px;margin:0 auto 2rem">
+      <div class="search-glow"></div>
+      <div class="search-inner">
+        <i class="fab fa-github s-icon"></i>
+        <input type="text" id="ghUsername" placeholder="Enter GitHub username… e.g. torvalds" class="search-input" onkeydown="if(event.key==='Enter') analyzeUser()"/>
+        <button class="morph-btn" onclick="analyzeUser()" id="analyzeBtn">
+          <span class="btn-text"><i class="fas fa-search"></i> Analyze</span>
+          <span class="btn-loading hidden"><i class="fas fa-spinner fa-spin"></i></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ghResult" class="gh-result hidden"></div>
+</div>
+
+<style>
+.gh-wrap { max-width:1000px; margin:0 auto; }
+.rg-header { text-align:center; margin-bottom:2rem; }
+.rg-title { font-family:'Orbitron',sans-serif; font-size:clamp(1.8rem,4vw,2.8rem); font-weight:900; letter-spacing:-1px; margin:.5rem 0; }
+.rg-sub { color:var(--text-muted); font-size:.95rem; }
+.gh-result { display:grid; grid-template-columns:1fr 2fr; gap:1.5rem; }
+@media(max-width:700px){.gh-result{grid-template-columns:1fr}}
+.gh-profile-card { background:var(--surface,rgba(13,13,26,.85)); border:1px solid var(--border,rgba(124,92,252,.15)); border-radius:16px; padding:1.5rem; text-align:center; backdrop-filter:blur(15px); }
+.gh-avatar { width:100px; height:100px; border-radius:50%; border:3px solid rgba(124,92,252,.5); margin:0 auto 1rem; display:block; box-shadow:0 0 20px rgba(124,92,252,.3); }
+.gh-name { font-size:1.2rem; font-weight:700; margin-bottom:.3rem; }
+.gh-bio { font-size:.83rem; color:var(--text-muted); margin-bottom:1rem; line-height:1.5; }
+.gh-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem; margin-bottom:1rem; }
+.gh-stat { background:rgba(124,92,252,.08); border:1px solid rgba(124,92,252,.15); border-radius:10px; padding:.6rem; }
+.gh-stat-n { font-family:'Orbitron',sans-serif; font-size:1.1rem; font-weight:700; color:#b794f4; }
+.gh-stat-l { font-size:.68rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
+.gh-detail { font-size:.78rem; color:var(--text-muted); margin:.25rem 0; display:flex; align-items:center; gap:.4rem; }
+.gh-detail i { color:#7c5cfc; width:14px; }
+.gh-right { display:flex; flex-direction:column; gap:1rem; }
+.gh-card { background:var(--surface,rgba(13,13,26,.85)); border:1px solid var(--border,rgba(124,92,252,.15)); border-radius:14px; overflow:hidden; backdrop-filter:blur(15px); }
+.gh-card-header { padding:.8rem 1.1rem; background:rgba(124,92,252,.08); border-bottom:1px solid var(--border,rgba(124,92,252,.15)); font-size:.88rem; font-weight:600; display:flex; align-items:center; gap:.5rem; }
+.gh-card-header i { color:#7c5cfc; }
+.gh-card-body { padding:1rem; }
+.gh-repo { display:flex; align-items:center; justify-content:space-between; padding:.5rem 0; border-bottom:1px solid rgba(124,92,252,.08); }
+.gh-repo:last-child { border-bottom:none; }
+.gh-repo-name { font-size:.85rem; font-weight:600; color:#b794f4; text-decoration:none; }
+.gh-repo-name:hover { text-decoration:underline; }
+.gh-repo-desc { font-size:.75rem; color:var(--text-muted); }
+.gh-repo-stars { font-size:.75rem; color:#f6c90e; white-space:nowrap; }
+.gh-lang-pills { display:flex; flex-wrap:wrap; gap:.4rem; }
+.gh-lang-pill { background:rgba(124,92,252,.12); border:1px solid rgba(124,92,252,.25); color:#b794f4; padding:.25rem .7rem; border-radius:20px; font-size:.75rem; font-weight:500; }
+.gh-analysis { font-size:.85rem; line-height:1.7; color:var(--text); white-space:pre-wrap; }
+.gh-link { display:inline-flex; align-items:center; gap:.4rem; background:linear-gradient(135deg,#7c5cfc,#c026d3); color:white; padding:.5rem 1.2rem; border-radius:8px; text-decoration:none; font-size:.85rem; font-weight:600; margin-top:.8rem; }
+</style>
+{% endblock %}
+{% block scripts %}
+<script>
+async function analyzeUser() {
+  const username = document.getElementById('ghUsername').value.trim();
+  if (!username) { showToast('Please enter a GitHub username!', true); return; }
+  const btn = document.getElementById('analyzeBtn');
+  btn.querySelector('.btn-text').classList.add('hidden');
+  btn.querySelector('.btn-loading').classList.remove('hidden');
+  btn.disabled = true;
+  const result = document.getElementById('ghResult');
+  result.classList.add('hidden');
+  result.innerHTML = '';
+  try {
+    const r = await fetch('/api/analyze-github-user', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username})
+    });
+    const d = await r.json();
+    if (d.success) {
+      const p = d.profile;
+      const langs = Object.entries(p.languages).sort((a,b)=>b[1]-a[1]).slice(0,8);
+      result.innerHTML = `
+        <div class="gh-profile-card">
+          <img src="${p.avatar}" class="gh-avatar" alt="${p.name}"/>
+          <div class="gh-name">${escHtml(p.name||username)}</div>
+          <div class="gh-bio">${escHtml(p.bio||'No bio available')}</div>
+          <div class="gh-stats">
+            <div class="gh-stat"><div class="gh-stat-n">${p.followers}</div><div class="gh-stat-l">Followers</div></div>
+            <div class="gh-stat"><div class="gh-stat-n">${p.repos}</div><div class="gh-stat-l">Repos</div></div>
+            <div class="gh-stat"><div class="gh-stat-n">${p.total_stars}</div><div class="gh-stat-l">Stars</div></div>
+          </div>
+          ${p.location ? '<div class="gh-detail"><i class="fas fa-map-marker-alt"></i>' + escHtml(p.location) + '</div>' : ''}
+          ${p.blog ? '<div class="gh-detail"><i class="fas fa-link"></i><a href="' + p.blog + '" target="_blank" style="color:#7c5cfc">' + escHtml(p.blog) + '</a></div>' : ''}
+          <div class="gh-detail"><i class="fas fa-calendar"></i> Joined ${p.joined}</div>
+          <a href="${p.github_url}" target="_blank" class="gh-link"><i class="fab fa-github"></i> View on GitHub</a>
+        </div>
+        <div class="gh-right">
+          <div class="gh-card">
+            <div class="gh-card-header"><i class="fas fa-code-branch"></i> Top Repositories</div>
+            <div class="gh-card-body">
+              ${p.top_repos.map(repo => `
+                <div class="gh-repo">
+                  <div>
+                    <a href="${repo.url}" target="_blank" class="gh-repo-name">${escHtml(repo.name)}</a>
+                    <div class="gh-repo-desc">${escHtml(repo.desc||'')}</div>
+                  </div>
+                  <div class="gh-repo-stars">⭐ ${repo.stars.toLocaleString()}</div>
+                </div>`).join('')}
+            </div>
+          </div>
+          <div class="gh-card">
+            <div class="gh-card-header"><i class="fas fa-code"></i> Languages Used</div>
+            <div class="gh-card-body">
+              <div class="gh-lang-pills">
+                ${langs.map(([lang, count]) => '<span class="gh-lang-pill">' + escHtml(lang) + ' (' + count + ')</span>').join('')}
+              </div>
+            </div>
+          </div>
+          <div class="gh-card">
+            <div class="gh-card-header"><i class="fas fa-brain"></i> AI Analysis</div>
+            <div class="gh-card-body"><pre class="gh-analysis">${escHtml(p.analysis)}</pre></div>
+          </div>
+        </div>`;
+      result.classList.remove('hidden');
+      showToast('Profile analyzed successfully!');
+    } else {
+      showToast(d.error || 'User not found', true);
+    }
+  } catch(e) {
+    showToast('Network error. Try again.', true);
+  }
+  btn.querySelector('.btn-text').classList.remove('hidden');
+  btn.querySelector('.btn-loading').classList.add('hidden');
+  btn.disabled = false;
+}
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+{% endblock %}

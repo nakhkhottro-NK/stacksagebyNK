@@ -86,6 +86,58 @@ def init_db():
         sent_at TEXT NOT NULL,
         FOREIGN KEY(user_id) REFERENCES users(id) )''')
 
+    c.execute('''CREATE TABLE IF NOT EXISTS student_xp (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER UNIQUE NOT NULL,
+        xp INTEGER DEFAULT 0,
+        level INTEGER DEFAULT 1,
+        streak INTEGER DEFAULT 0,
+        last_login TEXT DEFAULT '',
+        FOREIGN KEY(user_id) REFERENCES users(id) )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS study_notes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        content TEXT DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS todos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        text TEXT NOT NULL,
+        done INTEGER DEFAULT 0,
+        date TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS habits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        emoji TEXT DEFAULT '✅',
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS habit_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        habit_id INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) )''')
+
+    c.execute('''CREATE TABLE IF NOT EXISTS daily_challenges (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        topic TEXT NOT NULL,
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        user_answer TEXT DEFAULT '',
+        solved INTEGER DEFAULT 0,
+        FOREIGN KEY(user_id) REFERENCES users(id) )''')
+
     conn.commit()
     conn.close()
     print("[DB] Database initialized successfully.")
@@ -367,3 +419,212 @@ def get_platform_stats():
         'total_searches': total_searches,
         'total_projects': total_projects
     }
+
+
+# ── XP & Level System ────────────────────────────────────────
+XP_REWARDS = {
+    'login':    5,
+    'search':   10,
+    'test':     20,
+    'gold':     50,
+    'silver':   30,
+    'bronze':   15,
+    'project':  25,
+    'chat':     5,
+}
+
+LEVELS = [
+    (0,    'Beginner',     '🌱'),
+    (100,  'Explorer',     '🔍'),
+    (250,  'Developer',    '💻'),
+    (500,  'Coder',        '⚡'),
+    (1000, 'Senior Dev',   '🚀'),
+    (2000, 'Architect',    '🏗️'),
+    (5000, 'Legend',       '👑'),
+]
+
+def get_level_info(xp):
+    level_name, level_icon = 'Beginner', '🌱'
+    level_num = 1
+    for i, (req, name, icon) in enumerate(LEVELS):
+        if xp >= req:
+            level_name = name
+            level_icon = icon
+            level_num  = i + 1
+    next_xp = LEVELS[level_num][0] if level_num < len(LEVELS) else None
+    return {'name': level_name, 'icon': level_icon, 'num': level_num, 'next_xp': next_xp}
+
+
+def get_or_create_xp(user_id):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('SELECT xp, level, streak, last_login FROM student_xp WHERE user_id=?', (user_id,))
+    row = c.fetchone()
+    if not row:
+        c.execute('INSERT INTO student_xp (user_id, xp, level, streak, last_login) VALUES (?,0,1,0,?)',
+                  (user_id, datetime.now().date().isoformat()))
+        conn.commit()
+        conn.close()
+        return {'xp': 0, 'level': 1, 'streak': 0, 'last_login': datetime.now().date().isoformat()}
+    conn.close()
+    return {'xp': row[0], 'level': row[1], 'streak': row[2], 'last_login': row[3]}
+
+
+def add_xp(user_id, action):
+    points = XP_REWARDS.get(action, 0)
+    if not points:
+        return 0
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('SELECT xp FROM student_xp WHERE user_id=?', (user_id,))
+    row = c.fetchone()
+    if not row:
+        c.execute('INSERT INTO student_xp (user_id, xp, level, streak, last_login) VALUES (?,?,1,0,?)',
+                  (user_id, points, datetime.now().date().isoformat()))
+    else:
+        new_xp = row[0] + points
+        level_info = get_level_info(new_xp)
+        c.execute('UPDATE student_xp SET xp=?, level=? WHERE user_id=?',
+                  (new_xp, level_info['num'], user_id))
+    conn.commit(); conn.close()
+    return points
+
+
+def update_streak(user_id):
+    """Call on login — updates streak and awards login XP."""
+    conn = _get_conn(); c = conn.cursor()
+    today = datetime.now().date().isoformat()
+    c.execute('SELECT xp, streak, last_login FROM student_xp WHERE user_id=?', (user_id,))
+    row = c.fetchone()
+    if not row:
+        c.execute('INSERT INTO student_xp (user_id, xp, level, streak, last_login) VALUES (?,5,1,1,?)',
+                  (user_id, today))
+        conn.commit(); conn.close()
+        return {'streak': 1, 'xp_gained': 5}
+
+    xp, streak, last_login = row
+    yesterday = (datetime.now().date() - __import__('datetime').timedelta(days=1)).isoformat()
+
+    if last_login == today:
+        conn.close()
+        return {'streak': streak, 'xp_gained': 0}
+    elif last_login == yesterday:
+        streak += 1
+    else:
+        streak = 1
+
+    xp += XP_REWARDS['login']
+    level_info = get_level_info(xp)
+    c.execute('UPDATE student_xp SET xp=?, level=?, streak=?, last_login=? WHERE user_id=?',
+              (xp, level_info['num'], streak, today, user_id))
+    conn.commit(); conn.close()
+    return {'streak': streak, 'xp_gained': XP_REWARDS['login']}
+
+
+def get_xp_data(user_id):
+    data = get_or_create_xp(user_id)
+    level_info = get_level_info(data['xp'])
+    pct = 0
+    if level_info['next_xp']:
+        prev_xp = LEVELS[level_info['num'] - 1][0]
+        pct = round(((data['xp'] - prev_xp) / (level_info['next_xp'] - prev_xp)) * 100)
+    return {
+        'xp': data['xp'],
+        'streak': data['streak'],
+        'level_name': level_info['name'],
+        'level_icon': level_info['icon'],
+        'level_num':  level_info['num'],
+        'next_xp':    level_info['next_xp'],
+        'level_pct':  min(pct, 100),
+    }
+
+
+# ── Todo List ────────────────────────────────────────────────
+def get_todos(user_id, date):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('SELECT id, text, done FROM todos WHERE user_id=? AND date=? ORDER BY id', (user_id, date))
+    rows = c.fetchall(); conn.close()
+    return [{'id': r[0], 'text': r[1], 'done': bool(r[2])} for r in rows]
+
+def add_todo(user_id, text, date):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('INSERT INTO todos (user_id, text, done, date) VALUES (?,?,0,?)', (user_id, text, date))
+    conn.commit(); tid = c.lastrowid; conn.close()
+    return tid
+
+def toggle_todo(todo_id, user_id):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('UPDATE todos SET done = 1 - done WHERE id=? AND user_id=?', (todo_id, user_id))
+    conn.commit(); conn.close()
+
+def delete_todo(todo_id, user_id):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('DELETE FROM todos WHERE id=? AND user_id=?', (todo_id, user_id))
+    conn.commit(); conn.close()
+
+
+# ── Habit Tracker ────────────────────────────────────────────
+def get_habits(user_id):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('SELECT id, name, emoji, created_at FROM habits WHERE user_id=? ORDER BY id', (user_id,))
+    rows = c.fetchall(); conn.close()
+    return [{'id': r[0], 'name': r[1], 'emoji': r[2], 'created_at': r[3]} for r in rows]
+
+def add_habit(user_id, name, emoji='✅'):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('INSERT INTO habits (user_id, name, emoji, created_at) VALUES (?,?,?,?)',
+              (user_id, name, emoji, datetime.now().isoformat()))
+    conn.commit(); hid = c.lastrowid; conn.close()
+    return hid
+
+def delete_habit(habit_id, user_id):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('DELETE FROM habits WHERE id=? AND user_id=?', (habit_id, user_id))
+    c.execute('DELETE FROM habit_logs WHERE habit_id=? AND user_id=?', (habit_id, user_id))
+    conn.commit(); conn.close()
+
+def toggle_habit_log(user_id, habit_id, date):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('SELECT id FROM habit_logs WHERE user_id=? AND habit_id=? AND date=?', (user_id, habit_id, date))
+    row = c.fetchone()
+    if row:
+        c.execute('DELETE FROM habit_logs WHERE id=?', (row[0],))
+        done = False
+    else:
+        c.execute('INSERT INTO habit_logs (user_id, habit_id, date) VALUES (?,?,?)', (user_id, habit_id, date))
+        done = True
+    conn.commit(); conn.close()
+    return done
+
+def get_habit_logs(user_id, date):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('SELECT habit_id FROM habit_logs WHERE user_id=? AND date=?', (user_id, date))
+    rows = c.fetchall(); conn.close()
+    return [r[0] for r in rows]
+
+
+# ── Daily Challenge ──────────────────────────────────────────
+def get_or_create_challenge(user_id, date, topic, question, answer):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('SELECT id, question, answer, user_answer, solved FROM daily_challenges WHERE user_id=? AND date=?',
+              (user_id, date))
+    row = c.fetchone()
+    if not row:
+        c.execute('INSERT INTO daily_challenges (user_id, date, topic, question, answer) VALUES (?,?,?,?,?)',
+                  (user_id, date, topic, question, answer))
+        conn.commit()
+        conn.close()
+        return {'question': question, 'answer': answer, 'user_answer': '', 'solved': False, 'new': True}
+    conn.close()
+    return {'question': row[1], 'answer': row[2], 'user_answer': row[3], 'solved': bool(row[4]), 'new': False}
+
+def submit_challenge(user_id, date, user_answer):
+    conn = _get_conn(); c = conn.cursor()
+    c.execute('SELECT answer FROM daily_challenges WHERE user_id=? AND date=?', (user_id, date))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return False
+    correct = user_answer.strip().lower() in row[0].lower()
+    c.execute('UPDATE daily_challenges SET user_answer=?, solved=? WHERE user_id=? AND date=?',
+              (user_answer, 1 if correct else 0, user_id, date))
+    conn.commit(); conn.close()
+    return correct

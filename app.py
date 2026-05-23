@@ -21,7 +21,7 @@ from database import (init_db, save_search, get_recent_searches, get_search_by_i
                       save_skill_test, get_skill_tests,
                       add_project, get_projects, update_project, delete_project,
                       save_chat_message, get_chat_history, clear_chat_history,
-                      get_platform_stats)
+                      get_platform_stats, add_xp, get_xp_data, update_streak)
 import json
 import io
 import os
@@ -432,6 +432,7 @@ def login():
         token = create_user_session(uid)
         resp  = make_response(redirect(url_for('student_zone')))
         resp.set_cookie('session_token', token, max_age=60*60*24*30, httponly=True, samesite='Lax')
+        update_streak(uid)
         flash('Welcome back!', 'success')
         return resp
 
@@ -469,6 +470,7 @@ def student_zone():
     badge_rank = {'gold': 3, 'silver': 2, 'bronze': 1, '': 0}
     best_badge = max((t['badge'] for t in tests), key=lambda b: badge_rank.get(b, 0), default='')
 
+    xp_data = get_xp_data(user['id'])
     return render_template('student_zone.html',
                            current_user=user,
                            profile=profile,
@@ -476,7 +478,8 @@ def student_zone():
                            projects=projects,
                            chat_history=history,
                            best_badge=best_badge,
-                           stats=stats)
+                           stats=stats,
+                           xp_data=xp_data)
 
 
 @app.route('/student-zone/profile', methods=['POST'])
@@ -560,6 +563,9 @@ def submit_skill_test():
     badge = save_skill_test(user['id'], topic, score, total)
     pct   = round((score / total) * 100) if total else 0
 
+    add_xp(user['id'], 'test')
+    if badge:
+        add_xp(user['id'], badge)
     return jsonify({'success': True, 'score': score, 'total': total,
                     'pct': pct, 'badge': badge})
 
@@ -580,6 +586,7 @@ def create_project():
         data.get('live_url', '')[:300],
         data.get('status', 'in_progress')
     )
+    add_xp(user['id'], 'project')
     return jsonify({'success': True, 'id': pid})
 
 
@@ -671,9 +678,523 @@ def public_stats():
     return jsonify(get_platform_stats())
 
 
+
+# ════════════════════════════════════════════════════════════════
+# AI CODE REVIEWER
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/code-reviewer')
+def code_reviewer():
+    return render_template('code_reviewer.html')
+
+
+@app.route('/api/review-code', methods=['POST'])
+def review_code():
+    data     = request.get_json()
+    code     = data.get('code', '').strip()[:3000]
+    language = data.get('language', 'auto').strip()
+    focus    = data.get('focus', 'general').strip()
+    if not code:
+        return jsonify({'error': 'No code provided'}), 400
+
+    prompt = (
+        f"You are an expert code reviewer. Review this {language} code:\n\n"
+        f"```{language}\n{code}\n```\n\n"
+        f"Focus area: {focus}\n\n"
+        "Provide a structured review:\n\n"
+        "## What's Good\nList 2-3 positive aspects.\n\n"
+        "## Bugs & Issues\nList any bugs or errors.\n\n"
+        "## Performance\nAny performance issues.\n\n"
+        "## Security\nAny security vulnerabilities.\n\n"
+        "## Suggestions\n3-5 specific improvements with code examples.\n\n"
+        "## Overall Score\nRate X/10 with one-line summary.\n\n"
+        "Be specific and constructive."
+    )
+    try:
+        from config import get_ai_response
+        review = get_ai_response(prompt)
+        user = get_current_user()
+        if user:
+            add_xp(user['id'], 'chat')
+        return jsonify({'success': True, 'review': review})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ════════════════════════════════════════════════════════════════
+# GITHUB USER ANALYZER
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/github-analyzer')
+def github_analyzer():
+    return render_template('github_analyzer.html')
+
+
+@app.route('/api/analyze-github-user', methods=['POST'])
+def analyze_github_user():
+    data     = request.get_json()
+    username = data.get('username', '').strip()
+    if not username:
+        return jsonify({'error': 'Username required'}), 400
+
+    import requests as req_lib
+    from config import GITHUB_TOKEN
+    headers = {'Authorization': f'token {GITHUB_TOKEN}'} if GITHUB_TOKEN else {}
+
+    try:
+        user_r = req_lib.get(f'https://api.github.com/users/{username}', headers=headers, timeout=8)
+        if user_r.status_code == 404:
+            return jsonify({'error': f'User "{username}" not found'}), 404
+        user_data = user_r.json()
+
+        repos_r = req_lib.get(
+            f'https://api.github.com/users/{username}/repos?sort=stars&per_page=20',
+            headers=headers, timeout=8
+        )
+        repos = repos_r.json() if repos_r.status_code == 200 else []
+
+        languages = {}
+        total_stars = 0
+        total_forks = 0
+        for repo in repos:
+            if not repo.get('fork'):
+                lang = repo.get('language')
+                if lang:
+                    languages[lang] = languages.get(lang, 0) + 1
+                total_stars += repo.get('stargazers_count', 0)
+                total_forks += repo.get('forks_count', 0)
+
+        top_repos = sorted(
+            [r for r in repos if not r.get('fork')],
+            key=lambda x: x.get('stargazers_count', 0), reverse=True
+        )[:5]
+
+        repo_summary = ', '.join([r['name'] + ' (' + str(r.get('stargazers_count',0)) + ' stars)' for r in top_repos])
+        prompt = (
+            f"Analyze this GitHub developer: {username}\n"
+            f"Name: {user_data.get('name', username)}\n"
+            f"Bio: {user_data.get('bio', 'No bio')}\n"
+            f"Followers: {user_data.get('followers', 0)}, Repos: {user_data.get('public_repos', 0)}\n"
+            f"Stars: {total_stars}, Languages: {list(languages.keys())[:5]}\n"
+            f"Top repos: {repo_summary}\n\n"
+            "Write a brief analysis (max 200 words):\n"
+            "## Developer Summary\n## Strengths\n## Tech Focus\n## One-line verdict"
+        )
+        from config import get_ai_response
+        analysis = get_ai_response(prompt)
+
+        return jsonify({
+            'success': True,
+            'profile': {
+                'name':        user_data.get('name', username),
+                'bio':         user_data.get('bio', ''),
+                'avatar':      user_data.get('avatar_url', ''),
+                'followers':   user_data.get('followers', 0),
+                'following':   user_data.get('following', 0),
+                'repos':       user_data.get('public_repos', 0),
+                'location':    user_data.get('location', ''),
+                'blog':        user_data.get('blog', ''),
+                'joined':      user_data.get('created_at', '')[:10],
+                'total_stars': total_stars,
+                'total_forks': total_forks,
+                'languages':   languages,
+                'top_repos':   [{'name': r['name'], 'stars': r.get('stargazers_count',0),
+                                  'url': r['html_url'], 'desc': r.get('description',''),
+                                  'language': r.get('language','')} for r in top_repos],
+                'analysis':    analysis,
+                'github_url':  f'https://github.com/{username}'
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ════════════════════════════════════════════════════════════════
+# XP API
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/api/student/xp')
+def get_student_xp():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Not logged in'}), 401
+    return jsonify(get_xp_data(user['id']))
+
+
 # ════════════════════════════════════════════════════════════════
 # HEALTH + ERROR HANDLERS
 # ════════════════════════════════════════════════════════════════
+
+
+# ════════════════════════════════════════════════════════════════
+# README GENERATOR
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/readme-generator')
+def readme_generator():
+    return render_template('readme_generator.html')
+
+
+@app.route('/api/generate-readme', methods=['POST'])
+def generate_readme():
+    data = request.get_json()
+    project_name  = data.get('project_name', '').strip()[:100]
+    description   = data.get('description', '').strip()[:500]
+    tech_stack    = data.get('tech_stack', '').strip()[:200]
+    features      = data.get('features', '').strip()[:500]
+    github_url    = data.get('github_url', '').strip()[:200]
+    author        = data.get('author', '').strip()[:60]
+
+    if not project_name:
+        return jsonify({'error': 'Project name is required'}), 400
+
+    prompt = f"""Generate a professional, complete README.md for a GitHub project.
+
+Project Name: {project_name}
+Description: {description}
+Tech Stack: {tech_stack}
+Key Features: {features}
+GitHub URL: {github_url if github_url else 'https://github.com/username/' + project_name.lower().replace(' ', '-')}
+Author: {author if author else 'Developer'}
+
+Create a full README.md with these sections:
+- Title with badges (build, license, stars)
+- Short description
+- Table of contents
+- Features list
+- Tech stack
+- Installation steps
+- Usage examples
+- Contributing guide
+- License
+
+Use proper markdown formatting. Make it look professional and complete.
+Return ONLY the markdown content, no extra text."""
+
+    try:
+        from config import get_ai_response
+        readme = get_ai_response(prompt)
+        return jsonify({'success': True, 'readme': readme})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ════════════════════════════════════════════════════════════════
+# SKILL CERTIFICATE GENERATOR
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/api/student/certificate/<int:test_id>')
+def generate_certificate(test_id):
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login'))
+
+    tests = get_skill_tests(user['id'])
+    test  = next((t for t in tests if t['id'] == test_id), None)
+
+    if not test:
+        return "Test not found", 404
+
+    if test['pct'] < 70:
+        return "Score must be 70% or above to get a certificate", 403
+
+    profile = get_or_create_profile(user['id'], user['email'])
+
+    try:
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib import colors
+        from reportlab.lib.units import inch
+        from reportlab.platypus import SimpleDocTemplate
+        from reportlab.pdfgen import canvas as rl_canvas
+        import io
+        from datetime import datetime
+
+        buf = io.BytesIO()
+        c   = rl_canvas.Canvas(buf, pagesize=landscape(A4))
+        W, H = landscape(A4)
+
+        # Background
+        c.setFillColor(colors.HexColor('#06060f'))
+        c.rect(0, 0, W, H, fill=1, stroke=0)
+
+        # Border gradient effect
+        c.setStrokeColor(colors.HexColor('#7c5cfc'))
+        c.setLineWidth(3)
+        c.roundRect(20, 20, W-40, H-40, 12, fill=0, stroke=1)
+
+        c.setStrokeColor(colors.HexColor('#c026d3'))
+        c.setLineWidth(1)
+        c.roundRect(26, 26, W-52, H-52, 10, fill=0, stroke=1)
+
+        # Header
+        c.setFillColor(colors.HexColor('#7c5cfc'))
+        c.rect(0, H-80, W, 80, fill=1, stroke=0)
+
+        c.setFillColor(colors.white)
+        c.setFont('Helvetica-Bold', 28)
+        c.drawCentredString(W/2, H-55, 'StackSage')
+        c.setFont('Helvetica', 12)
+        c.drawCentredString(W/2, H-72, 'GitHub Trend Intelligence Platform')
+
+        # Certificate title
+        c.setFillColor(colors.HexColor('#f0f0ff'))
+        c.setFont('Helvetica-Bold', 36)
+        c.drawCentredString(W/2, H-150, 'Certificate of Achievement')
+
+        # Decorative line
+        c.setStrokeColor(colors.HexColor('#c026d3'))
+        c.setLineWidth(2)
+        c.line(W/2 - 200, H-165, W/2 + 200, H-165)
+
+        # This is to certify
+        c.setFillColor(colors.HexColor('#a0a0cc'))
+        c.setFont('Helvetica', 14)
+        c.drawCentredString(W/2, H-200, 'This is to certify that')
+
+        # Student name
+        c.setFillColor(colors.HexColor('#b794f4'))
+        c.setFont('Helvetica-Bold', 40)
+        c.drawCentredString(W/2, H-250, profile['display_name'])
+
+        # Has successfully
+        c.setFillColor(colors.HexColor('#a0a0cc'))
+        c.setFont('Helvetica', 14)
+        c.drawCentredString(W/2, H-285, 'has successfully completed the skill assessment in')
+
+        # Topic
+        c.setFillColor(colors.HexColor('#7c9eff'))
+        c.setFont('Helvetica-Bold', 30)
+        c.drawCentredString(W/2, H-330, test['topic'])
+
+        # Score & badge
+        badge_text = f"Score: {test['score']}/{test['total']} ({test['pct']}%)"
+        badge_colors = {'gold': '#f6c90e', 'silver': '#b0bec5', 'bronze': '#cd7f32'}
+        badge_col = badge_colors.get(test['badge'], '#7c9eff')
+
+        c.setFillColor(colors.HexColor(badge_col))
+        c.setFont('Helvetica-Bold', 18)
+        c.drawCentredString(W/2, H-370, badge_text)
+
+        if test['badge']:
+            c.setFont('Helvetica-Bold', 16)
+            medals = {'gold': '🥇 Gold Badge', 'silver': '🥈 Silver Badge', 'bronze': '🥉 Bronze Badge'}
+            c.drawCentredString(W/2, H-395, medals.get(test['badge'], ''))
+
+        # Footer
+        c.setStrokeColor(colors.HexColor('#7c5cfc'))
+        c.setLineWidth(1)
+        c.line(60, 80, W-60, 80)
+
+        c.setFillColor(colors.HexColor('#606080'))
+        c.setFont('Helvetica', 10)
+        date_str = test['taken_at'][:10]
+        c.drawString(60, 60, f'Date: {date_str}')
+        c.drawCentredString(W/2, 60, 'stacksagebynk.onrender.com')
+        c.drawRightString(W-60, 60, f'Certificate ID: SS-{test_id:04d}')
+
+        c.save()
+        buf.seek(0)
+
+        filename = f"StackSage_Certificate_{test['topic'].replace(' ', '_')}_{profile['display_name']}.pdf"
+        return send_file(buf, mimetype='application/pdf',
+                        download_name=filename, as_attachment=True)
+
+    except ImportError:
+        return "ReportLab not installed", 500
+    except Exception as e:
+        return f"Certificate generation error: {str(e)}", 500
+
+@app.route('/health')
+
+# ════════════════════════════════════════════════════════════════
+# DAILY TO-DO LIST
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/api/todos', methods=['GET'])
+def api_get_todos():
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Not logged in'}), 401
+    from database import get_todos
+    date = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+    return jsonify({'todos': get_todos(user['id'], date)})
+
+@app.route('/api/todos', methods=['POST'])
+def api_add_todo():
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Not logged in'}), 401
+    from database import add_todo
+    data = request.get_json()
+    date = data.get('date', datetime.now().strftime('%Y-%m-%d'))
+    tid  = add_todo(user['id'], data.get('text','').strip()[:200], date)
+    return jsonify({'success': True, 'id': tid})
+
+@app.route('/api/todos/<int:tid>/toggle', methods=['POST'])
+def api_toggle_todo(tid):
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Not logged in'}), 401
+    from database import toggle_todo
+    toggle_todo(tid, user['id'])
+    return jsonify({'success': True})
+
+@app.route('/api/todos/<int:tid>', methods=['DELETE'])
+def api_delete_todo(tid):
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Not logged in'}), 401
+    from database import delete_todo
+    delete_todo(tid, user['id'])
+    return jsonify({'success': True})
+
+
+# ════════════════════════════════════════════════════════════════
+# HABIT TRACKER
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/api/habits', methods=['GET'])
+def api_get_habits():
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Not logged in'}), 401
+    from database import get_habits, get_habit_logs
+    date   = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+    habits = get_habits(user['id'])
+    logs   = get_habit_logs(user['id'], date)
+    return jsonify({'habits': habits, 'logs': logs})
+
+@app.route('/api/habits', methods=['POST'])
+def api_add_habit():
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Not logged in'}), 401
+    from database import add_habit
+    data = request.get_json()
+    hid  = add_habit(user['id'], data.get('name','').strip()[:80], data.get('emoji','✅'))
+    return jsonify({'success': True, 'id': hid})
+
+@app.route('/api/habits/<int:hid>', methods=['DELETE'])
+def api_delete_habit(hid):
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Not logged in'}), 401
+    from database import delete_habit
+    delete_habit(hid, user['id'])
+    return jsonify({'success': True})
+
+@app.route('/api/habits/<int:hid>/toggle', methods=['POST'])
+def api_toggle_habit(hid):
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Not logged in'}), 401
+    from database import toggle_habit_log
+    date = request.get_json().get('date', datetime.now().strftime('%Y-%m-%d'))
+    done = toggle_habit_log(user['id'], hid, date)
+    if done: add_xp(user['id'], 'chat')
+    return jsonify({'success': True, 'done': done})
+
+
+# ════════════════════════════════════════════════════════════════
+# POMODORO TIMER (no DB needed — frontend only + XP on complete)
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/api/pomodoro/complete', methods=['POST'])
+def pomodoro_complete():
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Not logged in'}), 401
+    add_xp(user['id'], 'test')
+    return jsonify({'success': True, 'xp_gained': 20})
+
+
+# ════════════════════════════════════════════════════════════════
+# DAILY CODING CHALLENGE
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/api/daily-challenge', methods=['GET'])
+def get_daily_challenge():
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Not logged in'}), 401
+    from database import get_or_create_challenge
+    from config import get_ai_response
+
+    today   = datetime.now().strftime('%Y-%m-%d')
+    profile = get_or_create_profile(user['id'], user['email'])
+
+    prompt = (
+        f"Generate a short daily coding challenge for a {profile['skill_level']} developer.\n"
+        "Return ONLY a JSON object (no markdown) like this:\n"
+        '{"topic": "Python", "question": "What does len([1,2,3]) return?", "answer": "3"}\n'
+        "Keep the question short (1-2 sentences). Answer should be concise (1-10 words).\n"
+        "Make it educational and practical."
+    )
+
+    challenge = get_or_create_challenge(user['id'], today, '', '', '')
+
+    if challenge['new']:
+        try:
+            import json as _json
+            raw = get_ai_response(prompt).strip()
+            if raw.startswith('```'): raw = raw.split('```')[1]; raw = raw[4:] if raw.startswith('json') else raw
+            data = _json.loads(raw)
+            from database import get_or_create_challenge as gcc
+            challenge = gcc(user['id'], today, data['topic'], data['question'], data['answer'])
+        except:
+            challenge = {'question': 'What does list.append() do in Python?',
+                         'answer': 'Adds an element to the end of the list',
+                         'user_answer': '', 'solved': False}
+
+    return jsonify({'challenge': challenge, 'date': today})
+
+
+@app.route('/api/daily-challenge/submit', methods=['POST'])
+def submit_daily_challenge():
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Not logged in'}), 401
+    from database import submit_challenge
+    data    = request.get_json()
+    today   = datetime.now().strftime('%Y-%m-%d')
+    correct = submit_challenge(user['id'], today, data.get('answer', ''))
+    if correct:
+        add_xp(user['id'], 'test')
+    return jsonify({'success': True, 'correct': correct})
+
+
+# ════════════════════════════════════════════════════════════════
+# TECH WORD OF THE DAY
+# ════════════════════════════════════════════════════════════════
+
+_word_cache = {}
+
+@app.route('/api/word-of-day', methods=['GET'])
+def word_of_day():
+    from config import get_ai_response
+    import hashlib
+    today = datetime.now().strftime('%Y-%m-%d')
+    if today in _word_cache:
+        return jsonify(_word_cache[today])
+    prompt = (
+        f"Today is {today}. Generate a 'Tech Word of the Day' for developers.\n"
+        "Return ONLY a JSON object (no markdown):\n"
+        '{"word": "Recursion", "category": "Programming", "definition": "A function that calls itself.", '
+        '"example": "def factorial(n): return 1 if n<=1 else n*factorial(n-1)", '
+        '"used_by": "Python, JavaScript, Java"}\n'
+        "Pick an interesting, educational tech term. Keep definition under 20 words."
+    )
+    try:
+        import json as _json
+        raw = get_ai_response(prompt).strip()
+        if raw.startswith('```'): raw = raw.split('```')[1]; raw = raw[4:] if raw.startswith('json') else raw
+        data = _json.loads(raw)
+        _word_cache[today] = data
+        return jsonify(data)
+    except:
+        fallback = {'word': 'API', 'category': 'Web Development',
+                    'definition': 'Interface allowing software components to communicate.',
+                    'example': 'fetch("https://api.github.com/users/torvalds")',
+                    'used_by': 'Every modern web application'}
+        return jsonify(fallback)
+
+
+# ════════════════════════════════════════════════════════════════
+# JSON FORMATTER TOOL
+# ════════════════════════════════════════════════════════════════
+
+@app.route('/json-formatter')
+def json_formatter():
+    return render_template('json_formatter.html')
 
 @app.route('/health')
 def health():

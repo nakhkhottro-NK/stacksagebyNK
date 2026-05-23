@@ -159,6 +159,18 @@
   <div class="hm-grid" id="hmGrid"></div>
 </div>
 
+
+<!-- Tech Word of the Day -->
+<div class="wotd-card" id="wotdCard">
+  <div class="wotd-header">
+    <span class="wotd-badge"><i class="fas fa-bolt"></i> Word of the Day</span>
+    <span class="wotd-date" id="wotdDate"></span>
+  </div>
+  <div class="wotd-body" id="wotdBody">
+    <div class="wotd-loading"><i class="fas fa-spinner fa-spin"></i> Loading today's word...</div>
+  </div>
+</div>
+
 <!-- Recent Searches -->
 {% if recent_searches %}
 <section class="recent-section">
@@ -199,6 +211,39 @@
 </div>
 
 {% endblock %}
+
+
+<style>
+.wotd-card {
+  background: var(--surface, rgba(13,13,26,.85));
+  border: 1px solid rgba(124,92,252,.25);
+  border-radius: 16px; padding: 1.4rem 1.5rem;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(15px);
+  position: relative; overflow: hidden;
+}
+.wotd-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg,#7c5cfc,#c026d3,#f472b6,#fb923c);
+}
+.wotd-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.wotd-badge {
+  font-size: .75rem; font-weight: 700; letter-spacing: 1px;
+  background: linear-gradient(135deg,rgba(124,92,252,.15),rgba(192,38,211,.1));
+  border: 1px solid rgba(124,92,252,.3);
+  color: #b794f4; padding: .3rem .8rem; border-radius: 20px;
+  display: flex; align-items: center; gap: .4rem;
+}
+.wotd-date { font-size: .78rem; color: var(--text-muted); }
+.wotd-loading { text-align: center; padding: 1rem; color: var(--text-muted); font-size: .9rem; }
+.wotd-word { font-family: 'Orbitron', sans-serif; font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; background: linear-gradient(135deg,#7c5cfc,#c026d3,#f472b6); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: .3rem; }
+.wotd-cat { font-size: .75rem; font-weight: 600; background: rgba(124,92,252,.12); border: 1px solid rgba(124,92,252,.25); color: #a78bfa; padding: .2rem .7rem; border-radius: 20px; display: inline-block; margin-bottom: .8rem; }
+.wotd-def { font-size: .95rem; color: var(--text); margin-bottom: .8rem; line-height: 1.6; }
+.wotd-example { background: rgba(0,0,0,.3); border-left: 3px solid #7c5cfc; border-radius: 0 8px 8px 0; padding: .6rem 1rem; font-family: monospace; font-size: .85rem; color: #b794f4; margin-bottom: .6rem; }
+.wotd-used { font-size: .78rem; color: var(--text-muted); }
+.wotd-used strong { color: #7c5cfc; }
+</style>
 
 {% block scripts %}
 <script>
@@ -266,5 +311,22 @@ document.addEventListener('keydown',e=>{
 document.querySelectorAll('.cmd-sq').forEach(i=>{
   i.addEventListener('click',()=>{closeCmd();setQuery(i.dataset.query);document.getElementById('searchForm')?.submit();});
 });
+
+/* Word of Day */
+(function(){
+  const today = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('wotdDate').textContent = today;
+  fetch('/api/word-of-day').then(r=>r.json()).then(d=>{
+    document.getElementById('wotdBody').innerHTML = `
+      <div class="wotd-word">${d.word}</div>
+      <div class="wotd-cat">${d.category}</div>
+      <div class="wotd-def">${d.definition}</div>
+      <div class="wotd-example">${d.example}</div>
+      <div class="wotd-used">Used by: <strong>${d.used_by}</strong></div>`;
+  }).catch(()=>{
+    document.getElementById('wotdBody').innerHTML = '<div style="color:var(--text-muted);font-size:.85rem">Could not load word of the day.</div>';
+  });
+})();
+
 </script>
 {% endblock %}

@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}README Generator{% endblock %}
+
+{% block content %}
+<div class="rg-wrap">
+  <div class="rg-header">
+    <div class="hero-eyebrow">
+      <div class="eyebrow-line"></div>
+      <div class="eyebrow-text">AI-Powered Tool</div>
+      <div class="eyebrow-line r"></div>
+    </div>
+    <h1 class="rg-title">README <span class="t-morph">Generator</span></h1>
+    <p class="rg-sub">Fill in your project details — AI generates a professional README.md instantly</p>
+  </div>
+
+  <div class="rg-grid">
+    <!-- Form -->
+    <div class="rg-form-wrap">
+      <div class="card">
+        <div class="card-header"><i class="fas fa-edit"></i> Project Details</div>
+        <div class="card-body">
+          <div class="rg-field">
+            <label>Project Name <span class="req">*</span></label>
+            <input type="text" id="projectName" placeholder="e.g. StackSage" maxlength="100"/>
+          </div>
+          <div class="rg-field">
+            <label>Description</label>
+            <textarea id="projectDesc" rows="3" placeholder="What does your project do?" maxlength="500"></textarea>
+          </div>
+          <div class="rg-field">
+            <label>Tech Stack</label>
+            <input type="text" id="techStack" placeholder="e.g. Python, Flask, SQLite, Gemini AI" maxlength="200"/>
+          </div>
+          <div class="rg-field">
+            <label>Key Features</label>
+            <textarea id="features" rows="3" placeholder="e.g. AI analysis, GitHub data, PDF export" maxlength="500"></textarea>
+          </div>
+          <div class="rg-field">
+            <label>GitHub URL</label>
+            <input type="url" id="githubUrl" placeholder="https://github.com/username/repo"/>
+          </div>
+          <div class="rg-field">
+            <label>Your Name / Author</label>
+            <input type="text" id="authorName" placeholder="e.g. NK" maxlength="60"/>
+          </div>
+          <button class="morph-btn rg-gen-btn" onclick="generateReadme()" id="genBtn">
+            <span class="btn-text"><i class="fas fa-magic"></i> Generate README</span>
+            <span class="btn-loading hidden"><i class="fas fa-spinner fa-spin"></i> Generating...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="rg-output-wrap">
+      <div class="card rg-output-card">
+        <div class="card-header">
+          <i class="fas fa-file-code"></i> Generated README.md
+          <div style="margin-left:auto;display:flex;gap:.5rem">
+            <button class="action-btn" onclick="copyReadme()" id="copyBtn" style="display:none">
+              <i class="fas fa-copy"></i> Copy
+            </button>
+            <button class="action-btn" onclick="downloadReadme()" id="dlBtn" style="display:none">
+              <i class="fas fa-download"></i> Download
+            </button>
+          </div>
+        </div>
+        <div class="rg-output-body" id="outputBody">
+          <div class="rg-placeholder">
+            <i class="fas fa-magic fa-3x" style="opacity:.2;margin-bottom:1rem"></i>
+            <p>Fill in your project details and click <strong>Generate README</strong></p>
+            <p style="font-size:.8rem;margin-top:.5rem">AI will create a professional README.md for you</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.rg-wrap { max-width: 1200px; margin: 0 auto; }
+.rg-header { text-align: center; margin-bottom: 2rem; }
+.rg-title { font-family: 'Orbitron', sans-serif; font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; letter-spacing: -1px; margin: .5rem 0; }
+.rg-sub { color: var(--text-muted); font-size: .95rem; }
+.rg-grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 1.5rem; }
+@media(max-width: 900px) { .rg-grid { grid-template-columns: 1fr; } }
+.rg-field { margin-bottom: 1.1rem; }
+.rg-field label { display: block; font-size: .83rem; color: var(--text-muted); margin-bottom: .35rem; font-weight: 500; }
+.req { color: #f472b6; }
+.rg-field input, .rg-field textarea {
+  width: 100%; padding: .6rem .85rem;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text);
+  font-size: .9rem; font-family: inherit;
+  box-sizing: border-box; transition: border-color .2s;
+}
+.rg-field input:focus, .rg-field textarea:focus { outline: none; border-color: #7c5cfc; }
+.rg-field textarea { resize: vertical; }
+.rg-gen-btn { width: 100%; justify-content: center; margin-top: .5rem; padding: .85rem; font-size: 1rem; }
+.rg-output-card { height: 100%; display: flex; flex-direction: column; }
+.rg-output-body {
+  flex: 1; padding: 1.2rem;
+  overflow-y: auto; min-height: 400px;
+  background: var(--bg-2);
+}
+.rg-placeholder { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+.rg-code {
+  font-family: 'Courier New', monospace;
+  font-size: .82rem; line-height: 1.6;
+  color: var(--text); white-space: pre-wrap;
+  word-break: break-word;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let generatedReadme = '';
+
+async function generateReadme() {
+  const name = document.getElementById('projectName').value.trim();
+  if (!name) { showToast('Project name is required!', true); return; }
+
+  const btn = document.getElementById('genBtn');
+  btn.querySelector('.btn-text').classList.add('hidden');
+  btn.querySelector('.btn-loading').classList.remove('hidden');
+  btn.disabled = true;
+
+  document.getElementById('outputBody').innerHTML = `
+    <div style="text-align:center;padding:3rem;color:var(--text-muted)">
+      <i class="fas fa-spinner fa-spin fa-2x" style="margin-bottom:1rem;color:#7c5cfc"></i>
+      <p>AI is generating your README...</p>
+    </div>`;
+
+  try {
+    const r = await fetch('/api/generate-readme', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        project_name:  name,
+        description:   document.getElementById('projectDesc').value.trim(),
+        tech_stack:    document.getElementById('techStack').value.trim(),
+        features:      document.getElementById('features').value.trim(),
+        github_url:    document.getElementById('githubUrl').value.trim(),
+        author:        document.getElementById('authorName').value.trim()
+      })
+    });
+    const d = await r.json();
+
+    if (d.success) {
+      generatedReadme = d.readme;
+      document.getElementById('outputBody').innerHTML =
+        `<pre class="rg-code">${escHtml(d.readme)}</pre>`;
+      document.getElementById('copyBtn').style.display = '';
+      document.getElementById('dlBtn').style.display   = '';
+      showToast('README generated successfully!');
+    } else {
+      document.getElementById('outputBody').innerHTML =
+        `<div style="padding:1rem;color:#f472b6">${d.error}</div>`;
+    }
+  } catch(e) {
+    document.getElementById('outputBody').innerHTML =
+      `<div style="padding:1rem;color:#f472b6">Network error. Please try again.</div>`;
+  }
+
+  btn.querySelector('.btn-text').classList.remove('hidden');
+  btn.querySelector('.btn-loading').classList.add('hidden');
+  btn.disabled = false;
+}
+
+function copyReadme() {
+  navigator.clipboard.writeText(generatedReadme).then(() => showToast('Copied to clipboard!'));
+}
+
+function downloadReadme() {
+  const blob = new Blob([generatedReadme], {type: 'text/markdown'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'README.md';
+  a.click();
+  showToast('README.md downloaded!');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+{% endblock %}
