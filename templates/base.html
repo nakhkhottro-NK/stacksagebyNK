@@ -333,6 +333,49 @@
       font-size: 0.78rem;
       line-height: 1.5;
     }
+
+    /* ── CHINA HUB NAV LINK — special red gradient ── */
+    .nav-link.china-hub-link {
+      position: relative;
+      background: linear-gradient(135deg, rgba(196,0,0,0.12), rgba(255,215,0,0.08));
+      border: 1px solid rgba(196,0,0,0.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+    .nav-link.china-hub-link::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,215,0,0.25), transparent);
+      transition: left 0.6s ease;
+    }
+    .nav-link.china-hub-link:hover {
+      background: linear-gradient(135deg, rgba(196,0,0,0.25), rgba(255,215,0,0.15));
+      border-color: #c40000;
+      box-shadow: 0 4px 20px rgba(196,0,0,0.25);
+      transform: translateY(-1px);
+    }
+    .nav-link.china-hub-link:hover::before { left: 100%; }
+    .nav-link.china-hub-link.active {
+      background: linear-gradient(135deg, #c40000, #ff4444);
+      color: white !important;
+      border-color: #c40000;
+      box-shadow: 0 0 20px rgba(196,0,0,0.4);
+    }
+    .china-flag-icon {
+      display: inline-block;
+      font-size: 1rem;
+      animation: flagWave 3s ease-in-out infinite;
+      transform-origin: bottom left;
+    }
+    @keyframes flagWave {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      25% { transform: rotate(-8deg) scale(1.05); }
+      75% { transform: rotate(8deg) scale(1.05); }
+    }
   </style>
 </head>
 <body data-search-id="{{ search_id if search_id else '' }}">
@@ -356,6 +399,9 @@
     </a>
     <a href="/bookmarks" class="nav-link {% if request.endpoint == 'bookmarks' %}active{% endif %}">
       <i class="fas fa-bookmark"></i> <span data-i18n="nav_bookmarks">Bookmarks</span>
+    </a>
+    <a href="/china-hub" class="nav-link china-hub-link {% if request.endpoint == 'china_hub' %}active{% endif %}">
+      <span class="china-flag-icon">🇨🇳</span> <span data-i18n="nav_china_hub">China Hub</span>
     </a>
 
     <div class="lang-switcher">
@@ -419,6 +465,7 @@
   <a href="/compare" class="nav-link"><i class="fas fa-balance-scale"></i> <span data-i18n="nav_compare">Compare</span></a>
   <a href="/history" class="nav-link"><i class="fas fa-history"></i> <span data-i18n="nav_history">History</span></a>
   <a href="/bookmarks" class="nav-link"><i class="fas fa-bookmark"></i> <span data-i18n="nav_bookmarks">Bookmarks</span></a>
+  <a href="/china-hub" class="nav-link china-hub-link"><span class="china-flag-icon">🇨🇳</span> <span data-i18n="nav_china_hub">China Hub</span></a>
 
   <div class="menu-divider" style="margin: 0.75rem 0;"></div>
 
