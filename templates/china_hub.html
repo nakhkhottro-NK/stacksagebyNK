@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* ═══════════════════════════════════════════
+   CHINA HUB PAGE STYLES
+═══════════════════════════════════════════ */
+.china-hub {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.china-hero {
+  text-align: center;
+  padding: 3rem 1rem 2rem;
+  background: linear-gradient(135deg, rgba(196,0,0,0.15), rgba(255,215,0,0.1));
+  border-radius: 20px;
+  margin-bottom: 2.5rem;
+  border: 1px solid rgba(196,0,0,0.2);
+}
+
+.china-hero h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.china-hero h1 span { color: #c40000; }
+.china-hero p { color: var(--text-muted); font-size: 1.1rem; }
+
+.china-flag { font-size: 3rem; margin-bottom: 1rem; }
+
+/* SECTION HEADERS */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 2.5rem 0 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(196,0,0,0.3);
+}
+.section-header h2 { font-size: 1.4rem; font-weight: 700; }
+.section-icon { font-size: 1.5rem; }
+
+/* TECH GIANTS GRID */
+.giants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.giant-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  transition: transform 0.2s, border-color 0.2s;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.giant-card:hover { transform: translateY(-3px); border-color: #c40000; }
+.giant-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+.giant-logo { font-size: 2rem; }
+.giant-name { font-weight: 700; font-size: 1.05rem; }
+.giant-cn { color: var(--text-muted); font-size: 0.85rem; }
+.giant-desc { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 0.75rem; }
+.giant-stats { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.giant-stat { background: rgba(196,0,0,0.1); color: #c40000; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+
+/* UNIVERSITY RESOURCES */
+.uni-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.uni-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+}
+.uni-name { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.25rem; }
+.uni-cn { color: #c40000; font-size: 0.9rem; margin-bottom: 0.75rem; }
+.uni-links { display: flex; flex-direction: column; gap: 0.5rem; }
+.uni-link { display: flex; align-items: center; gap: 0.5rem; color: var(--accent); font-size: 0.9rem; text-decoration: none; padding: 0.4rem 0.6rem; border-radius: 8px; background: rgba(139,92,246,0.08); }
+.uni-link:hover { background: rgba(139,92,246,0.18); }
+
+/* TECH DICTIONARY */
+.dict-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.dict-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+}
+.dict-en { font-weight: 700; font-size: 1rem; color: var(--accent); }
+.dict-zh { font-size: 1.4rem; font-weight: 800; color: #c40000; margin: 0.25rem 0; }
+.dict-pinyin { color: var(--text-muted); font-size: 0.85rem; font-style: italic; }
+.dict-desc { color: var(--text-muted); font-size: 0.8rem; margin-top: 0.5rem; }
+
+/* CLOUD COMPARISON */
+.cloud-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.cloud-table th {
+  padding: 1rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.cloud-table th:first-child { text-align: left; }
+.cloud-table th.cn-col { background: rgba(196,0,0,0.1); color: #c40000; }
+.cloud-table th.global-col { background: rgba(139,92,246,0.1); color: var(--accent); }
+.cloud-table td { padding: 0.85rem 1rem; border-top: 1px solid var(--border); font-size: 0.9rem; text-align: center; }
+.cloud-table td:first-child { text-align: left; font-weight: 600; color: var(--text-muted); }
+.cloud-table tr:hover { background: rgba(255,255,255,0.03); }
+
+/* CALENDAR */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.calendar-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.cal-date { background: rgba(196,0,0,0.1); color: #c40000; border-radius: 10px; padding: 0.4rem 0.75rem; font-weight: 700; font-size: 0.9rem; white-space: nowrap; text-align: center; min-width: 70px; }
+.cal-info h4 { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.2rem; }
+.cal-info p { color: var(--text-muted); font-size: 0.82rem; }
+
+/* WECHAT THEME TOGGLE */
+.theme-options { display: flex; gap: 1rem; flex-wrap: wrap; }
+.theme-opt {
+  flex: 1;
+  min-width: 180px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+.theme-opt:hover, .theme-opt.active { border-color: #c40000; }
+.theme-opt-preview { height: 60px; border-radius: 8px; margin-bottom: 0.75rem; }
+.theme-opt h4 { font-weight: 700; margin-bottom: 0.25rem; }
+.theme-opt p { color: var(--text-muted); font-size: 0.85rem; }
+.preview-wechat { background: linear-gradient(135deg, #07c160, #1aad19); }
+.preview-red { background: linear-gradient(135deg, #c40000, #ff4444); }
+.preview-default { background: linear-gradient(135deg, #7c3aed, #8b5cf6); }
+</style>
+
+<div class="china-hub">
+
+  <!-- HERO -->
+  <div class="china-hero">
+    <div class="china-flag">🇨🇳</div>
+    <h1>China <span>Tech</span> Hub</h1>
+    <p>中国科技资源中心 · Chinese Tech Resources for Developers</p>
+  </div>
+
+  <!-- ① TECH GIANTS -->
+  <div class="section-header">
+    <span class="section-icon">🏢</span>
+    <h2>Chinese Tech Giants · 中国科技巨头</h2>
+  </div>
+  <div class="giants-grid">
+    <a href="https://github.com/alibaba" target="_blank" class="giant-card">
+      <div class="giant-header">
+        <span class="giant-logo">🟠</span>
+        <div><div class="giant-name">Alibaba</div><div class="giant-cn">阿里巴巴</div></div>
+      </div>
+      <p class="giant-desc">E-commerce, cloud computing, AI. Home of Ant Design, Druid, FastJSON.</p>
+      <div class="giant-stats"><span class="giant-stat">Cloud</span><span class="giant-stat">AI</span><span class="giant-stat">E-commerce</span></div>
+    </a>
+    <a href="https://github.com/tencent" target="_blank" class="giant-card">
+      <div class="giant-header">
+        <span class="giant-logo">🟢</span>
+        <div><div class="giant-name">Tencent</div><div class="giant-cn">腾讯</div></div>
+      </div>
+      <p class="giant-desc">Social media, gaming, fintech. WeChat, QQ, TencentOS, TARS framework.</p>
+      <div class="giant-stats"><span class="giant-stat">Gaming</span><span class="giant-stat">WeChat</span><span class="giant-stat">Cloud</span></div>
+    </a>
+    <a href="https://github.com/huawei" target="_blank" class="giant-card">
+      <div class="giant-header">
+        <span class="giant-logo">🔴</span>
+        <div><div class="giant-name">Huawei</div><div class="giant-cn">华为</div></div>
+      </div>
+      <p class="giant-desc">Telecom, hardware, HarmonyOS. MindSpore AI framework, openEuler OS.</p>
+      <div class="giant-stats"><span class="giant-stat">5G</span><span class="giant-stat">HarmonyOS</span><span class="giant-stat">AI</span></div>
+    </a>
+    <a href="https://github.com/bytedance" target="_blank" class="giant-card">
+      <div class="giant-header">
+        <span class="giant-logo">⚫</span>
+        <div><div class="giant-name">ByteDance</div><div class="giant-cn">字节跳动</div></div>
+      </div>
+      <p class="giant-desc">TikTok, Douyin, AI-driven content. Creator of Rspack, Lark, CloudWeGo.</p>
+      <div class="giant-stats"><span class="giant-stat">TikTok</span><span class="giant-stat">AI</span><span class="giant-stat">Tools</span></div>
+    </a>
+    <a href="https://github.com/baidu" target="_blank" class="giant-card">
+      <div class="giant-header">
+        <span class="giant-logo">🔵</span>
+        <div><div class="giant-name">Baidu</div><div class="giant-cn">百度</div></div>
+      </div>
+      <p class="giant-desc">Search engine, autonomous driving, ERNIE AI. PaddlePaddle deep learning.</p>
+      <div class="giant-stats"><span class="giant-stat">AI</span><span class="giant-stat">Search</span><span class="giant-stat">Autonomous</span></div>
+    </a>
+    <a href="https://github.com/xiaomi" target="_blank" class="giant-card">
+      <div class="giant-header">
+        <span class="giant-logo">🟡</span>
+        <div><div class="giant-name">Xiaomi</div><div class="giant-cn">小米</div></div>
+      </div>
+      <p class="giant-desc">Consumer electronics, MIUI, IoT. HyperOS, Vela OS, open-source tools.</p>
+      <div class="giant-stats"><span class="giant-stat">IoT</span><span class="giant-stat">Mobile</span><span class="giant-stat">OS</span></div>
+    </a>
+  </div>
+
+  <!-- ② CHINA GITHUB TRENDING -->
+  <div class="section-header">
+    <span class="section-icon">🏆</span>
+    <h2>China GitHub Trending · 中国开发者趋势</h2>
+  </div>
+  <div class="giants-grid">
+    <a href="https://github.com/trending?since=weekly&spoken_language_code=zh" target="_blank" class="giant-card">
+      <div class="giant-header"><span class="giant-logo">📈</span><div><div class="giant-name">Weekly Trending</div><div class="giant-cn">本周热门</div></div></div>
+      <p class="giant-desc">Top trending repositories this week by Chinese developers on GitHub.</p>
+      <div class="giant-stats"><span class="giant-stat">Weekly</span><span class="giant-stat">中文</span></div>
+    </a>
+    <a href="https://github.com/trending?since=monthly&spoken_language_code=zh" target="_blank" class="giant-card">
+      <div class="giant-header"><span class="giant-logo">📊</span><div><div class="giant-name">Monthly Trending</div><div class="giant-cn">本月热门</div></div></div>
+      <p class="giant-desc">Most popular repositories this month from the Chinese dev community.</p>
+      <div class="giant-stats"><span class="giant-stat">Monthly</span><span class="giant-stat">中文</span></div>
+    </a>
+    <a href="https://github.com/topics/china" target="_blank" class="giant-card">
+      <div class="giant-header"><span class="giant-logo">🌏</span><div><div class="giant-name">China Topic</div><div class="giant-cn">中国话题</div></div></div>
+      <p class="giant-desc">All repositories tagged with the China topic on GitHub.</p>
+      <div class="giant-stats"><span class="giant-stat">Topic</span><span class="giant-stat">GitHub</span></div>
+    </a>
+  </div>
+
+  <!-- ③ UNIVERSITY RESOURCES -->
+  <div class="section-header">
+    <span class="section-icon">🎓</span>
+    <h2>Chinese University CS Resources · 中国大学计算机资源</h2>
+  </div>
+  <div class="uni-grid">
+    <div class="uni-card">
+      <div class="uni-name">Tsinghua University</div>
+      <div class="uni-cn">清华大学 · Beijing</div>
+      <div class="uni-links">
+        <a href="https://github.com/thu-coai" target="_blank" class="uni-link"><i class="fas fa-external-link-alt"></i> THU CoAI Lab (AI Research)</a>
+        <a href="https://github.com/THUDM" target="_blank" class="uni-link"><i class="fas fa-external-link-alt"></i> THUDM (ChatGLM)</a>
+        <a href="https://www.cs.tsinghua.edu.cn" target="_blank" class="uni-link"><i class="fas fa-external-link-alt"></i> CS Department</a>
+      </div>
+    </div>
+    <div class="uni-card">
+      <div class="uni-name">Peking University</div>
+      <div class="uni-cn">北京大学 · Beijing</div>
+      <div class="uni-links">
+        <a href="https://github.com/pkuserc" target="_blank" class="uni-link"><i class="fas fa-external-link-alt"></i> PKU SERC Lab</a>
+        <a href="https://eecs.pku.edu.cn" target="_blank" class="uni-link"><i class="fas fa-external-link-alt"></i> EECS Department</a>
+        <a href="https://github.com/pku-lemonade" target="_blank" class="uni-link"><i class="fas fa-external-link-alt"></i> PKU Lemonade</a>
+      </div>
+    </div>
+    <div class="uni-card">
+      <div class="uni-name">Zhengzhou University</div>
+      <div class="uni-cn">郑州大学 · Zhengzhou, Henan</div>
+      <div class="uni-links">
+        <a href="https://github.com/zzu-bigdata-team" target="_blank" class="uni-link"><i class="fas fa-external-link-alt"></i> ZZU Big Data Team</a>
+        <a href="http://www5.zzu.edu.cn/cs/" target="_blank" class="uni-link"><i class="fas fa-external-link-alt"></i> CS Department</a>
+        <a href="https://github.com/topics/zhengzhou-university" target="_blank" class="uni-link"><i class="fas fa-external-link-alt"></i> ZZU GitHub Projects</a>
+      </div>
+    </div>
+    <div class="uni-card">
+      <div class="uni-name">Shanghai Jiao Tong University</div>
+      <div class="uni-cn">上海交通大学 · Shanghai</div>
+      <div class="uni-links">
+        <a href="https://github.com/SJTU-IPADS" target="_blank" class="uni-link"><i class="fas fa-external-link-alt"></i> IPADS Lab</a>
+        <a href="https://github.com/sjtu-liyunzhe" target="_blank" class="uni-link"><i class="fas fa-external-link-alt"></i> SJTU Research</a>
+        <a href="https://cs.sjtu.edu.cn" target="_blank" class="uni-link"><i class="fas fa-external-link-alt"></i> CS Department</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ TECH DICTIONARY -->
+  <div class="section-header">
+    <span class="section-icon">🀄</span>
+    <h2>Chinese Tech Dictionary · 中文技术词典</h2>
+  </div>
+  <div class="dict-grid">
+    <div class="dict-card"><div class="dict-en">Artificial Intelligence</div><div class="dict-zh">人工智能</div><div class="dict-pinyin">rén gōng zhì néng</div><div class="dict-desc">AI — the simulation of human intelligence</div></div>
+    <div class="dict-card"><div class="dict-en">Machine Learning</div><div class="dict-zh">机器学习</div><div class="dict-pinyin">jī qì xué xí</div><div class="dict-desc">ML — algorithms that learn from data</div></div>
+    <div class="dict-card"><div class="dict-en">Deep Learning</div><div class="dict-zh">深度学习</div><div class="dict-pinyin">shēn dù xué xí</div><div class="dict-desc">Neural network-based learning</div></div>
+    <div class="dict-card"><div class="dict-en">Cloud Computing</div><div class="dict-zh">云计算</div><div class="dict-pinyin">yún jì suàn</div><div class="dict-desc">On-demand computing resources</div></div>
+    <div class="dict-card"><div class="dict-en">Big Data</div><div class="dict-zh">大数据</div><div class="dict-pinyin">dà shù jù</div><div class="dict-desc">Extremely large datasets</div></div>
+    <div class="dict-card"><div class="dict-en">Blockchain</div><div class="dict-zh">区块链</div><div class="dict-pinyin">qū kuài liàn</div><div class="dict-desc">Distributed ledger technology</div></div>
+    <div class="dict-card"><div class="dict-en">Open Source</div><div class="dict-zh">开源</div><div class="dict-pinyin">kāi yuán</div><div class="dict-desc">Publicly available source code</div></div>
+    <div class="dict-card"><div class="dict-en">Algorithm</div><div class="dict-zh">算法</div><div class="dict-pinyin">suàn fǎ</div><div class="dict-desc">Step-by-step problem solving</div></div>
+    <div class="dict-card"><div class="dict-en">Database</div><div class="dict-zh">数据库</div><div class="dict-pinyin">shù jù kù</div><div class="dict-desc">Structured data storage system</div></div>
+    <div class="dict-card"><div class="dict-en">Framework</div><div class="dict-zh">框架</div><div class="dict-pinyin">kuàng jià</div><div class="dict-desc">Software development structure</div></div>
+    <div class="dict-card"><div class="dict-en">Internet of Things</div><div class="dict-zh">物联网</div><div class="dict-pinyin">wù lián wǎng</div><div class="dict-desc">Connected physical devices</div></div>
+    <div class="dict-card"><div class="dict-en">Cybersecurity</div><div class="dict-zh">网络安全</div><div class="dict-pinyin">wǎng luò ān quán</div><div class="dict-desc">Protection of digital systems</div></div>
+  </div>
+
+  <!-- ⑤ CLOUD COMPARISON -->
+  <div class="section-header">
+    <span class="section-icon">📊</span>
+    <h2>Cloud Comparison · 云服务对比</h2>
+  </div>
+  <table class="cloud-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th class="cn-col">🇨🇳 Alibaba Cloud (阿里云)</th>
+        <th class="cn-col">🇨🇳 Baidu Cloud (百度云)</th>
+        <th class="global-col">🌐 AWS</th>
+        <th class="global-col">🌐 Google Cloud</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>AI Services</td><td>PAI Studio</td><td>BML / ERNIE</td><td>SageMaker</td><td>Vertex AI</td></tr>
+      <tr><td>Best Region</td><td>Asia Pacific</td><td>China</td><td>Global</td><td>Global</td></tr>
+      <tr><td>Storage</td><td>OSS</td><td>BOS</td><td>S3</td><td>Cloud Storage</td></tr>
+      <tr><td>Container</td><td>ACK</td><td>CCE</td><td>EKS</td><td>GKE</td></tr>
+      <tr><td>Free Tier</td><td>✅ 12 months</td><td>✅ Limited</td><td>✅ 12 months</td><td>✅ $300 credit</td></tr>
+      <tr><td>China Access</td><td>✅ Excellent</td><td>✅ Excellent</td><td>⚠️ Restricted</td><td>⚠️ Restricted</td></tr>
+      <tr><td>ICP License</td><td>✅ Supported</td><td>✅ Supported</td><td>❌ Required separately</td><td>❌ Required separately</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ⑥ DEVELOPER CALENDAR -->
+  <div class="section-header">
+    <span class="section-icon">📅</span>
+    <h2>Chinese Developer Calendar 2026 · 开发者日历</h2>
+  </div>
+  <div class="calendar-grid">
+    <div class="calendar-card"><div class="cal-date">Jan 1</div><div class="cal-info"><h4>New Year · 元旦</h4><p>National holiday — 1 day</p></div></div>
+    <div class="calendar-card"><div class="cal-date">Jan 28</div><div class="cal-info"><h4>Spring Festival · 春节</h4><p>Chinese New Year (Year of the Snake) — 7 days</p></div></div>
+    <div class="calendar-card"><div class="cal-date">Mar</div><div class="cal-info"><h4>GitHub China Hackathon</h4><p>Annual hackathon for Chinese developers</p></div></div>
+    <div class="calendar-card"><div class="cal-date">Apr 5</div><div class="cal-info"><h4>Qingming · 清明节</h4><p>National holiday — 3 days</p></div></div>
+    <div class="calendar-card"><div class="cal-date">May 1</div><div class="cal-info"><h4>Labour Day · 劳动节</h4><p>National holiday — 5 days</p></div></div>
+    <div class="calendar-card"><div class="cal-date">Jun</div><div class="cal-info"><h4>Alibaba Cloud Summit</h4><p>Major cloud computing conference in China</p></div></div>
+    <div class="calendar-card"><div class="cal-date">Jun 1</div><div class="cal-info"><h4>Dragon Boat · 端午节</h4><p>National holiday — 3 days</p></div></div>
+    <div class="calendar-card"><div class="cal-date">Sep</div><div class="cal-info"><h4>Huawei Developer Congress</h4><p>HarmonyOS & cloud developer conference</p></div></div>
+    <div class="calendar-card"><div class="cal-date">Oct 1</div><div class="cal-info"><h4>National Day · 国庆节</h4><p>National holiday — 7 days (Golden Week)</p></div></div>
+    <div class="calendar-card"><div class="cal-date">Nov 11</div><div class="cal-info"><h4>Singles Day · 双十一</h4><p>World's largest e-commerce event — Alibaba</p></div></div>
+    <div class="calendar-card"><div class="cal-date">Nov</div><div class="cal-info"><h4>Tencent Global Digital Ecosystem Summit</h4><p>Annual developer & partner conference</p></div></div>
+    <div class="calendar-card"><div class="cal-date">Dec</div><div class="cal-info"><h4>Baidu AI Developer Conference</h4><p>ERNIE & AI platform updates</p></div></div>
+  </div>
+
+</div>
+{% endblock %}

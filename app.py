@@ -1195,6 +1195,11 @@ def word_of_day():
 def json_formatter():
     return render_template('json_formatter.html')
 
+
+@app.route('/china-hub')
+def china_hub():
+    return render_template('china_hub.html')
+
 @app.route('/health')
 def health():
     return jsonify({'status': 'ok', 'service': 'StackSage', 'version': '2.0'})
