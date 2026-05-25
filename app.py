@@ -1004,7 +1004,6 @@ def generate_certificate(test_id):
     except Exception as e:
         return f"Certificate generation error: {str(e)}", 500
 
-@app.route('/health')
 
 # ════════════════════════════════════════════════════════════════
 # DAILY TO-DO LIST
