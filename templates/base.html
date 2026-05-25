@@ -464,7 +464,8 @@
   {% block content %}{% endblock %}
 </main>
 
-<!-- ── ABOUT SECTION (English) ── -->
+<!-- ── ABOUT SECTION (only on homepage) ── -->
+{% if request.endpoint == 'index' %}
 <section id="about" class="about-section">
   <div class="about-grid">
     <div class="info-card">
@@ -550,6 +551,7 @@
     </div>
   </div>
 </section>
+{% endif %}
 
 <!-- ── FOOTER ── -->
 <footer style="margin-top: 3rem;">
