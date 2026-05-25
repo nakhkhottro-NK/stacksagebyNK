@@ -7,6 +7,7 @@ const translations = {
   en: {
     nav_explore: 'Explore', nav_history: 'History',
     nav_bookmarks: 'Bookmarks', nav_compare: 'Compare',
+    nav_about: 'About', nav_feedback: 'Feedback',
 
     hero_badge: 'AI-Powered Analysis',
     hero_title1: 'Discover What',
@@ -39,12 +40,35 @@ const translations = {
     compare_a: 'Domain A', compare_b: 'Domain B',
     compare_btn: 'Compare Now',
 
+    auth_login: 'Sign In', auth_signup: 'Sign Up', auth_logout: 'Logout',
+    auth_profile: 'Profile', auth_settings: 'Settings',
+
+    bookmark_empty: 'No bookmarks yet.',
+    history_empty: 'No search history yet.',
+    history_title: 'Search History',
+    bookmark_title: 'My Bookmarks',
+
+    student_title: 'Student Zone',
+    student_sub: 'Resources, roadmaps, and tools for students.',
+    todo_title: 'Daily To-Do',
+    todo_placeholder: 'Add a task…',
+    todo_add: 'Add',
+
+    about_what: 'What is this?',
+    about_why: 'Why use it?',
+    about_how: 'How to use it?',
+    about_supported: "What's supported?",
+
+    word_of_day: 'Word of the Day',
     footer_dev: 'Built with ❤️',
+    loading: 'Analyzing…',
+    error_msg: 'Something went wrong. Please try again.',
   },
 
   zh: {
     nav_explore: '探索', nav_history: '历史',
     nav_bookmarks: '书签', nav_compare: '比较',
+    nav_about: '关于', nav_feedback: '反馈',
 
     hero_badge: 'AI 驱动分析',
     hero_title1: '发现开发者',
@@ -77,12 +101,35 @@ const translations = {
     compare_a: '领域 A', compare_b: '领域 B',
     compare_btn: '立即比较',
 
+    auth_login: '登录', auth_signup: '注册', auth_logout: '退出',
+    auth_profile: '个人资料', auth_settings: '设置',
+
+    bookmark_empty: '还没有书签。',
+    history_empty: '还没有搜索历史。',
+    history_title: '搜索历史',
+    bookmark_title: '我的书签',
+
+    student_title: '学生专区',
+    student_sub: '为学生提供的资源、路线图和工具。',
+    todo_title: '每日待办',
+    todo_placeholder: '添加任务…',
+    todo_add: '添加',
+
+    about_what: '这是什么？',
+    about_why: '为什么使用它？',
+    about_how: '如何使用？',
+    about_supported: '支持什么？',
+
+    word_of_day: '每日词汇',
     footer_dev: '用心打造 ❤️',
+    loading: '分析中…',
+    error_msg: '出了点问题，请重试。',
   },
 
   bn: {
     nav_explore: 'অন্বেষণ', nav_history: 'ইতিহাস',
     nav_bookmarks: 'বুকমার্ক', nav_compare: 'তুলনা',
+    nav_about: 'সম্পর্কে', nav_feedback: 'মতামত',
 
     hero_badge: 'AI চালিত বিশ্লেষণ',
     hero_title1: 'আবিষ্কার করুন',
@@ -115,7 +162,29 @@ const translations = {
     compare_a: 'ডোমেইন A', compare_b: 'ডোমেইন B',
     compare_btn: 'এখন তুলনা করুন',
 
+    auth_login: 'সাইন ইন', auth_signup: 'সাইন আপ', auth_logout: 'লগআউট',
+    auth_profile: 'প্রোফাইল', auth_settings: 'সেটিংস',
+
+    bookmark_empty: 'এখনো কোনো বুকমার্ক নেই।',
+    history_empty: 'এখনো কোনো সার্চ ইতিহাস নেই।',
+    history_title: 'সার্চ ইতিহাস',
+    bookmark_title: 'আমার বুকমার্ক',
+
+    student_title: 'শিক্ষার্থী অঞ্চল',
+    student_sub: 'শিক্ষার্থীদের জন্য রিসোর্স, রোডম্যাপ এবং টুলস।',
+    todo_title: 'দৈনিক কাজের তালিকা',
+    todo_placeholder: 'একটি কাজ যোগ করুন…',
+    todo_add: 'যোগ করুন',
+
+    about_what: 'এটা কী?',
+    about_why: 'কেন ব্যবহার করবেন?',
+    about_how: 'কীভাবে ব্যবহার করবেন?',
+    about_supported: 'কী সমর্থিত?',
+
+    word_of_day: 'আজকের শব্দ',
     footer_dev: 'ভালোবাসা দিয়ে তৈরি ❤️',
+    loading: 'বিশ্লেষণ করা হচ্ছে…',
+    error_msg: 'কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।',
   }
 };
 
@@ -138,6 +207,9 @@ function applyLanguage(lang) {
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.classList.toggle('lang-active', btn.getAttribute('data-lang') === lang);
   });
+
+  // Update page direction for Chinese
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang === 'bn' ? 'bn' : 'en';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
